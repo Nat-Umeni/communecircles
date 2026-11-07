@@ -1,0 +1,140 @@
+/* Generated from resources/theme/tokens.json by resources/theme/vite-plugin.js. Edit tokens.json, not this file. */
+
+@theme {
+    --color-white: #FFFFFF;
+    --color-forest-500: #689372;
+    --color-forest-600: #4A7C5F;
+    --color-forest-700: #43765D;
+    --color-forest-800: #205545;
+    --color-forest-900: #184D3B;
+    --color-forest-950: #0F3328;
+    --color-sage-50: #EAF1E5;
+    --color-sage-100: #DCEFD8;
+    --color-sage-200: #D7E7CE;
+    --color-sage-300: #D2E4C7;
+    --color-sage-400: #C1DAB2;
+    --color-sage-500: #A8D5A2;
+    --color-sage-600: #9CBD9D;
+    --color-mist-400: #B2CAB9;
+    --color-leaf-500: #6E9F57;
+    --color-leaf-700: #3F7D3A;
+    --color-lime-200: #D3FF99;
+    --color-stone-50: #F7F8F3;
+    --color-stone-200: #E1E6DD;
+    --color-ink-400: #8E9491;
+    --color-ink-500: #5F6F67;
+    --color-ink-900: #1D2A24;
+    --color-night-50: #F1F7F2;
+    --color-night-100: #E3ECE6;
+    --color-night-300: #9DB0A6;
+    --color-night-500: #6F7F77;
+    --color-night-700: #263A31;
+    --color-night-800: #1E3A2E;
+    --color-night-850: #1A2E25;
+    --color-night-900: #15241E;
+    --color-night-950: #0E1A15;
+    --color-red-400: #F97066;
+    --color-red-700: #B42318;
+    --color-amber-400: #FDB022;
+    --color-amber-700: #B54708;
+    --radius-control: 12px;
+    --radius-card: 16px;
+    --radius-panel: 24px;
+    --font-sans: 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-heading: Nunito, ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Playfair Display', ui-serif, Georgia, serif;
+}
+
+:root {
+    --background: #F7F8F3;
+    --surface: #FFFFFF;
+    --foreground: #1D2A24;
+    --heading: #0F3328;
+    --muted-foreground: #5F6F67;
+    --subtle-foreground: #8E9491;
+    --border: #E1E6DD;
+    --ring: #6E9F57;
+    --primary: #184D3B;
+    --primary-foreground: #FFFFFF;
+    --secondary: #EAF1E5;
+    --secondary-foreground: #0F3328;
+    --accent: #A8D5A2;
+    --accent-foreground: #0F3328;
+    --highlight: #DCEFD8;
+    --highlight-foreground: #0F3328;
+    --icon: #6E9F57;
+    --icon-foreground: #D3FF99;
+    --brand: #184D3B;
+    --brand-foreground: #FFFFFF;
+    --brand-muted-foreground: #DCEFD8;
+    --brand-decoration: #4A7C5F;
+    --danger: #B42318;
+    --danger-foreground: #FFFFFF;
+    --warning: #B54708;
+    --warning-foreground: #FFFFFF;
+    --success: #3F7D3A;
+    --success-foreground: #FFFFFF;
+}
+
+.dark {
+    --background: #0E1A15;
+    --surface: #15241E;
+    --foreground: #E3ECE6;
+    --heading: #F1F7F2;
+    --muted-foreground: #9DB0A6;
+    --subtle-foreground: #6F7F77;
+    --border: #263A31;
+    --ring: #A8D5A2;
+    --primary: #A8D5A2;
+    --primary-foreground: #0F3328;
+    --secondary: #1A2E25;
+    --secondary-foreground: #DCEFD8;
+    --accent: #A8D5A2;
+    --accent-foreground: #0F3328;
+    --highlight: #1E3A2E;
+    --highlight-foreground: #DCEFD8;
+    --icon: #6E9F57;
+    --icon-foreground: #D3FF99;
+    --brand: #0F3328;
+    --brand-foreground: #FFFFFF;
+    --brand-muted-foreground: #DCEFD8;
+    --brand-decoration: #4A7C5F;
+    --danger: #F97066;
+    --danger-foreground: #0E1A15;
+    --warning: #FDB022;
+    --warning-foreground: #0E1A15;
+    --success: #A8D5A2;
+    --success-foreground: #0F3328;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-surface: var(--surface);
+    --color-foreground: var(--foreground);
+    --color-heading: var(--heading);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-subtle-foreground: var(--subtle-foreground);
+    --color-border: var(--border);
+    --color-ring: var(--ring);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-highlight: var(--highlight);
+    --color-highlight-foreground: var(--highlight-foreground);
+    --color-icon: var(--icon);
+    --color-icon-foreground: var(--icon-foreground);
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-brand-muted-foreground: var(--brand-muted-foreground);
+    --color-brand-decoration: var(--brand-decoration);
+    --color-danger: var(--danger);
+    --color-danger-foreground: var(--danger-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+}
+
