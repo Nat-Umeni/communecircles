@@ -1,0 +1,11 @@
+vendor
+.env
+.git
+node_modules
+Dockerfile
+docker-compose.yml
+nginx/default.conf
+storage
+public/build
+public/hot
+public/fonts-manifest.dev.json
