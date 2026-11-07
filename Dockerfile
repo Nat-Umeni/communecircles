@@ -30,12 +30,21 @@ RUN pecl install xdebug \
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Run as a user whose uid/gid match the host user, so files created inside the
+# container (artisan make:, logs, caches) stay owned by, and editable for, the host.
+ARG UID=1000
+ARG GID=1000
+RUN groupadd --gid ${GID} laravel \
+    && useradd --uid ${UID} --gid ${GID} --create-home --shell /bin/bash laravel
+
 WORKDIR /var/www
 
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
     && sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh
+
+USER laravel
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm", "-F"]

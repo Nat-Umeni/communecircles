@@ -37,14 +37,7 @@ if [ ! -d vendor ]; then
 fi
 
 # -----------------------------------
-# 4. Fix permissions
-# -----------------------------------
-echo "Fixing permissions..."
-chown -R www-data:www-data storage bootstrap/cache || true
-chmod -R 775 storage bootstrap/cache || true
-
-# -----------------------------------
-# 5. Generate app key
+# 4. Generate app key
 # -----------------------------------
 if ! grep -q "^APP_KEY=base64" .env; then
     echo "Generating app key..."
@@ -52,7 +45,7 @@ if ! grep -q "^APP_KEY=base64" .env; then
 fi
 
 # -----------------------------------
-# 6. Wait for MySQL
+# 5. Wait for MySQL
 # -----------------------------------
 echo "Waiting for MySQL..."
 
@@ -68,7 +61,7 @@ try {
 done
 
 # -----------------------------------
-# 7. Run migrations (background)
+# 6. Run migrations (background)
 # -----------------------------------
 (
     echo "Running migrations..."
@@ -79,7 +72,7 @@ done
 ) &
 
 # -----------------------------------
-# 8. Start PHP-FPM
+# 7. Start PHP-FPM
 # -----------------------------------
 echo "Starting PHP-FPM..."
 exec php-fpm -F
