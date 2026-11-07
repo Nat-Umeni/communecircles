@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug \
-    && echo "xdebug.mode=off" > /usr/local/etc/php/conf.d/xdebug.ini
+    && echo "xdebug.mode=coverage" > /usr/local/etc/php/conf.d/xdebug.ini
 
 
 # Composer
