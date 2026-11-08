@@ -101,24 +101,37 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($user->can('create', Circle::class));
     }
 
-    public function test_members_cannot_create_circles_in_their_first_five_minutes(): void
+    public function test_members_cannot_create_circles_in_their_first_five_minutes_and_are_told_why(): void
     {
         $this->freezeSecond();
         $user = User::factory()->create();
 
         $this->travel(5 * 60 - 1)->seconds();
 
-        $this->assertFalse($user->can('create', Circle::class));
+        $permission = Gate::forUser($user)->inspect('create', Circle::class);
+        $this->assertTrue($permission->denied());
+        $this->assertSame('New accounts can create a circle 5 minutes after joining.', $permission->message());
     }
 
-    public function test_members_who_have_not_confirmed_their_email_cannot_create_circles(): void
+    public function test_members_who_have_not_confirmed_their_email_cannot_create_circles_and_are_told_why(): void
     {
         $this->freezeSecond();
         $user = User::factory()->unverified()->create();
 
         $this->travel(5)->minutes();
 
-        $this->assertFalse($user->can('create', Circle::class));
+        $permission = Gate::forUser($user)->inspect('create', Circle::class);
+        $this->assertTrue($permission->denied());
+        $this->assertSame('Confirm your email address to create a circle.', $permission->message());
+    }
+
+    public function test_asks_brand_new_accounts_to_confirm_their_email_before_mentioning_the_wait(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $permission = Gate::forUser($user)->inspect('create', Circle::class);
+
+        $this->assertSame('Confirm your email address to create a circle.', $permission->message());
     }
 
     #[DataProvider('staffRoles')]

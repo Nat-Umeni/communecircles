@@ -39,13 +39,15 @@ class CircleController extends Controller
     }
 
     /**
-     * Show the page for creating a circle.
+     * Show the page for creating a circle, or why the member can't create one yet.
      */
     public function create(): Response
     {
-        Gate::authorize('create', Circle::class);
+        $permission = Gate::inspect('create', Circle::class);
 
-        return Inertia::render('circles/Create');
+        return Inertia::render('circles/Create', [
+            'cannot_create_reason' => $permission->denied() ? $permission->message() : null,
+        ]);
     }
 
     /**

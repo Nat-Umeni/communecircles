@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Circle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Inertia\Middleware;
@@ -51,9 +50,6 @@ class HandleInertiaRequests extends Middleware
                     'email_verified' => $user->hasVerifiedEmail(),
                 ]
                 : null,
-                'can' => [
-                    'create_circle' => $user?->can('create', Circle::class) ?? false,
-                ],
             ],
             'locale' => App::getLocale(),
             'locales' => [

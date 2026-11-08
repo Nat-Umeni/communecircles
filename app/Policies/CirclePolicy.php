@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Circle;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class CirclePolicy
 {
@@ -45,12 +46,27 @@ class CirclePolicy
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determine whether the user can create a circle. Staff can straight away; everyone else needs a confirmed
+     * email and an account a few minutes old, and is told which one is missing (email first, since they can act on it).
      */
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-        return $user->role->internal()
-            || ($user->hasVerifiedEmail() && $user->created_at->lte(now()->subMinutes(self::MINUTES_BEFORE_NEW_ACCOUNTS_CAN_CREATE)));
+        if ($user->role->internal()) {
+            return Response::allow();
+        }
+
+        if (! $user->hasVerifiedEmail()) {
+            return Response::deny('Confirm your email address to create a circle.');
+        }
+
+        if ($user->created_at->gt(now()->subMinutes(self::MINUTES_BEFORE_NEW_ACCOUNTS_CAN_CREATE))) {
+            return Response::deny(sprintf(
+                'New accounts can create a circle %d minutes after joining.',
+                self::MINUTES_BEFORE_NEW_ACCOUNTS_CAN_CREATE,
+            ));
+        }
+
+        return Response::allow();
     }
 
     /**

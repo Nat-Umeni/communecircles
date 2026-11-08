@@ -143,18 +143,21 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->component('circles/Create'));
     }
 
-    public function test_opens_the_new_circle_page_rather_than_looking_for_a_circle_called_create(): void
+    public function test_opens_the_new_circle_page_with_no_reason_to_wait_for_a_member_who_can_create(): void
     {
         $response = $this->actingAs($this->memberWhoCanCreate())->get(route('circles.create'));
 
         $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('cannot_create_reason', null));
     }
 
-    public function test_brand_new_accounts_cannot_open_the_new_circle_page(): void
+    public function test_tells_a_brand_new_account_on_the_new_circle_page_why_it_cannot_create_one_yet(): void
     {
         $response = $this->actingAs(User::factory()->create())->get(route('circles.create'));
 
-        $response->assertForbidden();
+        $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('cannot_create_reason', 'New accounts can create a circle 5 minutes after joining.'));
     }
 
     public function test_stores_the_circle_with_its_creator_as_owner_and_opens_it(): void
