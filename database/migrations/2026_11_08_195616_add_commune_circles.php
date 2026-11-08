@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\Circle;
-use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -23,15 +21,13 @@ return new class extends Migration
 
         Schema::create('circle_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Circle::class)->constrained()->cascadeOnDelete();
-            $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
+            $table->foreignId('circle_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('role');
             $table->unique(['circle_id', 'user_id']);
             $table->index(['circle_id', 'role']);
             $table->timestamps();
         });
-
-        
     }
 
     /**

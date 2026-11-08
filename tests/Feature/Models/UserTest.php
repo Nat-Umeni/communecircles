@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\CircleRole;
 use App\Enums\Role;
+use App\Models\Circle;
 use App\Models\User;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
@@ -114,6 +116,17 @@ class UserTest extends TestCase
         $user = User::factory()->make();
 
         $this->assertSame(Role::User, $user->role);
+    }
+
+    public function test_circles_are_the_ones_the_member_is_in_with_their_role(): void
+    {
+        $user = User::factory()->create();
+        $circle = Circle::factory()->create();
+        $circle->members()->attach($user, ['role' => CircleRole::Admin]);
+        Circle::factory()->create();
+
+        $this->assertSame([$circle->id], $user->circles->modelKeys());
+        $this->assertSame(CircleRole::Admin, $user->circles->first()->pivot->role);
     }
 
     public function test_logs_a_new_member_joining_without_their_password(): void

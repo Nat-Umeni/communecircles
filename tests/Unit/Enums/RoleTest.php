@@ -14,6 +14,12 @@ class RoleTest extends TestCase
         $this->assertSame($label, $role->label());
     }
 
+    #[DataProvider('internalRoles')]
+    public function test_only_admins_and_super_admins_are_internal(Role $role, bool $isInternal): void
+    {
+        $this->assertSame($isInternal, $role->internal());
+    }
+
     /**
      * @return array<string, array{Role, string}>
      */
@@ -23,6 +29,18 @@ class RoleTest extends TestCase
             'user' => [Role::User, 'User'],
             'admin' => [Role::Admin, 'Admin'],
             'super admin' => [Role::SuperAdmin, 'Super Admin'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{Role, bool}>
+     */
+    public static function internalRoles(): array
+    {
+        return [
+            'user' => [Role::User, false],
+            'admin' => [Role::Admin, true],
+            'super admin' => [Role::SuperAdmin, true],
         ];
     }
 }

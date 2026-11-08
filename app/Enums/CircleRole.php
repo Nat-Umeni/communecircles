@@ -16,4 +16,12 @@ enum CircleRole: string
             self::Member => 'Member',
         };
     }
+
+    public function hasManagerRole(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Admin => true,
+            default => false
+        };
+    }
 }
