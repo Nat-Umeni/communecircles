@@ -1,6 +1,11 @@
 import type { Component } from 'vue';
 
 /**
+ * A member's site-wide role (App\Enums\Role). Circle roles like chief belong to circle memberships, not here.
+ */
+export type Role = 'user' | 'admin' | 'super_admin';
+
+/**
  * The signed-in member, shared with every page by app/Http/Middleware/HandleInertiaRequests.php.
  */
 export interface AuthUser {
@@ -9,6 +14,7 @@ export interface AuthUser {
     email: string;
     /** Whether they've clicked the link in their confirmation email. */
     email_verified: boolean;
+    role: Role;
 }
 
 /**
