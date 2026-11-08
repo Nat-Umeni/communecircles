@@ -3,8 +3,8 @@
 namespace Tests\Feature\Http\Controllers\Auth;
 
 use App\Models\User;
+use App\Notifications\ResetPassword;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
