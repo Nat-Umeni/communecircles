@@ -2,14 +2,24 @@
 import { usePage } from '@inertiajs/vue3';
 import { LogOut, Settings, UserRound } from '@lucide/vue';
 import { computed } from 'vue';
+import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
+import type { Role } from '@/types';
 
 const page = usePage();
 
 // Shared with every page by app/Http/Middleware/HandleInertiaRequests.php; null for guests.
 const user = computed(() => page.props.auth.user);
+
+// Staff get a badge next to their name; ordinary members don't.
+const roleBadges: Partial<Record<Role, { label: string; variant: 'accent' | 'primary' }>> = {
+    admin: { label: 'Admin', variant: 'accent' },
+    super_admin: { label: 'Super admin', variant: 'primary' },
+};
+
+const roleBadge = computed(() => (user.value ? roleBadges[user.value.role] : undefined));
 </script>
 
 <template>
@@ -21,6 +31,7 @@ const user = computed(() => page.props.auth.user);
         <div class="flex min-w-0 flex-1 flex-col">
             <span class="truncate font-heading font-bold text-heading">{{ user.first_name }} {{ user.last_name }}</span>
             <span class="truncate text-sm text-muted-foreground">{{ user.email }}</span>
+            <Badge v-if="roleBadge" :variant="roleBadge.variant" class="mt-1 self-start">{{ roleBadge.label }}</Badge>
         </div>
         <DropdownMenu label="Account menu" side="top">
             <template #trigger>
