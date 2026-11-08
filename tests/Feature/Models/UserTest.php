@@ -3,12 +3,35 @@
 namespace Tests\Feature\Models;
 
 use App\Models\User;
+use App\Notifications\ResetPassword;
+use App\Notifications\VerifyEmail;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UserTest extends TestCase
 {
+    public function test_sends_the_queued_email_confirmation(): void
+    {
+        $user = User::factory()->unverified()->make();
+        Notification::fake();
+
+        $user->sendEmailVerificationNotification();
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_sends_the_queued_password_reset_email_with_its_token(): void
+    {
+        $user = User::factory()->make();
+        Notification::fake();
+
+        $user->sendPasswordResetNotification('token-from-broker');
+
+        Notification::assertSentTo($user, ResetPassword::class, fn (ResetPassword $notification): bool => $notification->token === 'token-from-broker');
+    }
+
     public function test_hashes_the_password_when_it_is_assigned(): void
     {
         $user = new User(['password' => 'correct-horse-battery']);
