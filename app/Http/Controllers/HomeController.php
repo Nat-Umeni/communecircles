@@ -8,29 +8,12 @@ use Inertia\Response;
 class HomeController extends Controller
 {
     /**
-     * Show the home page: the welcome hero and the circles feed.
+     * Show the home page with the circles feed.
      */
     public function __invoke(): Response
     {
         return Inertia::render('Home', [
-            'title' => 'Circles',
-            'hero' => [
-                'title' => 'A place to learn, connect, and build a more sustainable way of living.',
-                'description' => 'Join a Circle, ask the people already farming, building and living in community, and share what you learn.',
-                'primaryAction' => ['label' => 'Join the Circle', 'href' => null],
-                'secondaryAction' => ['label' => 'Log in', 'href' => null],
-            ],
-            'feeds' => [
-                ['value' => 'latest', 'label' => 'Latest'],
-                ['value' => 'circles', 'label' => 'Circles'],
-            ],
-            'activeFeed' => 'circles',
-            'latestEmpty' => [
-                'title' => 'No posts yet',
-                'description' => 'New posts from every circle will show up here.',
-            ],
             'circles' => $this->placeholderCircles(),
-            'communityRules' => ['label' => 'Community rules', 'href' => '#'],
         ]);
     }
 

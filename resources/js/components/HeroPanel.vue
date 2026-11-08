@@ -1,6 +1,4 @@
 <script setup>
-import Button from '@/components/ui/Button.vue';
-
 defineProps({
     title: {
         type: String,
@@ -8,15 +6,6 @@ defineProps({
     },
     description: {
         type: String,
-        required: true,
-    },
-    // { label, href } — with no href the button renders as a plain <button>.
-    primaryAction: {
-        type: Object,
-        required: true,
-    },
-    secondaryAction: {
-        type: Object,
         required: true,
     },
 });
@@ -42,8 +31,8 @@ defineProps({
             <h1 class="text-3xl leading-tight font-extrabold text-brand-foreground sm:text-4xl">{{ title }}</h1>
             <p class="text-lg text-brand-muted-foreground">{{ description }}</p>
             <div class="mt-2 flex flex-wrap gap-3">
-                <Button variant="accent" size="lg" :href="primaryAction.href">{{ primaryAction.label }}</Button>
-                <Button variant="surface" size="lg" :href="secondaryAction.href">{{ secondaryAction.label }}</Button>
+                <!-- The call-to-action buttons. -->
+                <slot />
             </div>
         </div>
     </section>

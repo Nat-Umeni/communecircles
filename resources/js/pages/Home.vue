@@ -4,33 +4,39 @@ import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CircleCard from '@/components/CircleCard.vue';
 import HeroPanel from '@/components/HeroPanel.vue';
+import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
 
 // From app/Http/Controllers/HomeController.php, plus locale/locales shared by HandleInertiaRequests.
 const props = defineProps({
-    title: { type: String, required: true },
-    hero: { type: Object, required: true },
-    feeds: { type: Array, required: true },
-    activeFeed: { type: String, required: true },
-    latestEmpty: { type: Object, required: true },
     circles: { type: Array, required: true },
-    communityRules: { type: Object, required: true },
     locale: { type: String, required: true },
     locales: { type: Array, required: true },
 });
 
-// The selected tab and language are UI state, starting from what the server sent.
-const feed = ref(props.activeFeed);
+const feeds = [
+    { value: 'latest', label: 'Latest' },
+    { value: 'circles', label: 'Circles' },
+];
+
+// The selected tab and language are UI state; the language starts from the server's locale.
+const feed = ref('circles');
 const language = ref(props.locale);
 </script>
 
 <template>
     <AppLayout>
-        <Head :title="title" />
+        <Head title="Circles" />
 
-        <HeroPanel v-bind="hero" />
+        <HeroPanel
+            title="A place to learn, connect, and build a more sustainable way of living."
+            description="Join a Circle, ask the people already farming, building and living in community, and share what you learn."
+        >
+            <Button variant="accent" size="lg">Join the Circle</Button>
+            <Button variant="surface" size="lg">Log in</Button>
+        </HeroPanel>
 
         <!--
             Section icon grid from the mockup, hidden for now because the sidebar already links to every section.
@@ -62,10 +68,10 @@ const language = ref(props.locale);
         <template v-if="feed === 'circles'">
             <CircleCard v-for="circle in circles" :key="circle.name" v-bind="circle" />
         </template>
-        <Card v-else :title="latestEmpty.title" :description="latestEmpty.description" />
+        <Card v-else title="No posts yet" description="New posts from every circle will show up here." />
 
         <footer class="flex flex-col items-center gap-4 py-6">
-            <TextLink :href="communityRules.href" external>{{ communityRules.label }}</TextLink>
+            <TextLink href="#" external>Community rules</TextLink>
             <SegmentedControl v-model="language" shape="pill" label="Language" :options="locales" />
         </footer>
     </AppLayout>
