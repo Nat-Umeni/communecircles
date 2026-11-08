@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
-import Input from '@/components/ui/Input.vue';
 import NavItem from '@/components/ui/NavItem.vue';
+import Input from '@/components/ui/form/Input.vue';
 
 // Whether the drawer is open on small screens. From lg up the sidebar is always shown.
 const open = defineModel<boolean>('open', { required: true });
@@ -35,7 +35,7 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
 
             <!-- The icon is the file of that name in public/images/icons. Give an item an href (and active check) once its page exists. -->
             <nav aria-label="Sections" class="flex flex-col gap-1">
-                <NavItem :href="$page.props.homeUrl" icon="circles" :active="$page.component === 'Home'">Circles</NavItem>
+                <NavItem :href="route('home')" icon="circles" :active="$page.component === 'Home'">Circles</NavItem>
                 <NavItem icon="explore">Explore</NavItem>
                 <NavItem icon="learn">Learn</NavItem>
                 <NavItem icon="exchange">Exchange</NavItem>

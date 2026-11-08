@@ -6,7 +6,8 @@
         "module": "ESNext",
         "moduleResolution": "bundler",
         "paths": {
-            "@/*": ["./resources/js/*"]
+            "@/*": ["./resources/js/*"],
+            "ziggy-js": ["./vendor/tightenco/ziggy"]
         },
         "types": ["vite/client"],
         "resolveJsonModule": true,

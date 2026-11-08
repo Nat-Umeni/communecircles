@@ -7,11 +7,13 @@ import Badge from '@/components/ui/Badge.vue';
 import BrandIcon from '@/components/ui/BrandIcon.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
-import Input from '@/components/ui/Input.vue';
 import NavItem from '@/components/ui/NavItem.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
+import FormField from '@/components/ui/form/FormField.vue';
+import Input from '@/components/ui/form/Input.vue';
+import PasswordInput from '@/components/ui/form/PasswordInput.vue';
 
 interface PaletteColour {
     name: string;
@@ -49,6 +51,7 @@ defineProps<{
 const tabs = ref('circles');
 const language = ref('en');
 const text = ref('');
+const password = ref('');
 </script>
 
 <template>
@@ -143,10 +146,19 @@ const text = ref('');
             </div>
         </Card>
 
-        <Card title="Form controls">
-            <div class="flex max-w-md flex-col gap-3">
+        <Card title="Form controls" description="Wrap a control in FormField for its label, hint and error; it links them to the control for screen readers.">
+            <div class="flex max-w-md flex-col gap-5">
                 <Input v-model="text" placeholder="Placeholder text" aria-label="Example input" />
                 <Input placeholder="Disabled" aria-label="Disabled example input" disabled />
+                <FormField v-slot="field" label="Field with a hint" hint="Help text sits under the control.">
+                    <Input v-bind="field" v-model="text" />
+                </FormField>
+                <FormField v-slot="field" label="Field with an error" error="This field is required.">
+                    <Input v-bind="field" />
+                </FormField>
+                <FormField v-slot="field" label="Password">
+                    <PasswordInput v-bind="field" v-model="password" autocomplete="off" />
+                </FormField>
             </div>
         </Card>
 
@@ -154,7 +166,7 @@ const text = ref('');
             <div class="flex flex-col gap-4">
                 <div class="flex flex-wrap gap-2">
                     <Tag>plain-tag</Tag>
-                    <Tag href="/">linked-tag</Tag>
+                    <Tag :href="route('home')">linked-tag</Tag>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <Badge v-for="variant in ['primary', 'secondary', 'accent', 'success', 'warning', 'danger']" :key="variant" :variant="variant">

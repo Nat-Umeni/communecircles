@@ -23,6 +23,8 @@
         </script>
 
         @fonts
+        {{-- The named routes, for Ziggy's route() helper in the Vue pages. --}}
+        @routes
         @vite('resources/js/app.ts')
         <x-inertia::head>
             <title>{{ config('app.name', 'Commune Circles') }}</title>

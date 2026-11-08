@@ -38,7 +38,6 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'homeUrl' => route('home', absolute: false),
             'locale' => App::getLocale(),
             'locales' => [
                 ['value' => 'en', 'label' => 'English'],

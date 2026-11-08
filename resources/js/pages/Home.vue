@@ -35,18 +35,16 @@ const language = ref(props.locale);
             title="A place to learn, connect, and build a more sustainable way of living."
             description="Join a Circle, ask the people already farming, building and living in community, and share what you learn."
         >
-            <Button variant="accent" size="lg">Join the Circle</Button>
+            <Button variant="accent" size="lg" :href="route('auth.register.create')">Join the Circle</Button>
             <Button variant="surface" size="lg">Log in</Button>
         </HeroPanel>
 
         <!--
             Section icon grid from the mockup, hidden for now because the sidebar already links to every section.
-            To restore it: remove this comment's opening and closing lines, then add
-            `Link` to the @inertiajs/vue3 import and import BrandIcon and Badge from @/components/ui/.
         <Card>
             <ul class="grid grid-cols-2 gap-x-4 gap-y-8 py-2 text-center font-display text-lg tracking-wide text-heading uppercase sm:grid-cols-4 sm:text-xl">
                 <li>
-                    <Link :href="$page.props.homeUrl" class="flex flex-col items-center gap-3 rounded-card p-2 transition-colors hover:bg-secondary">
+                    <Link :href="route('home')" class="flex flex-col items-center gap-3 rounded-card p-2 transition-colors hover:bg-secondary">
                         <BrandIcon name="circles" :size="88" />Circles
                     </Link>
                 </li>
