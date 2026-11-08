@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Button from '@/components/ui/Button.vue';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter } from '@tests/support';
 
 describe('Button', () => {
     it('is a plain button by default, in the primary medium style', () => {

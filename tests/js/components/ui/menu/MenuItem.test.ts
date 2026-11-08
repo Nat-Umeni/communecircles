@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
-import { fakeRouter } from '../../../support/router';
+import { fakeRouter } from '@tests/support';
 
 describe('MenuItem', () => {
     it('is a menu item button, out of the tab order, without an href', () => {

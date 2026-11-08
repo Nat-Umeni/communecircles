@@ -1,12 +1,10 @@
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import VerifyEmail from '@/pages/auth/VerifyEmail.vue';
-import { signIn } from '../../support/page';
-import { visit } from '../../support/form';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter, signIn, visit } from '@tests/support';
 
 // The only button in the card; its label changes while sending.
-const resendButton = (wrapper: ReturnType<typeof mount>) => wrapper.get('main section button');
+const resendButton = (wrapper: VueWrapper) => wrapper.get('main section button');
 
 describe('VerifyEmail', () => {
     it('tells the member where the link was sent', () => {

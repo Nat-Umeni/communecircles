@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import NavItem from '@/components/ui/NavItem.vue';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter } from '@tests/support';
 
 describe('NavItem', () => {
     it('links to its page with its icon and label', async () => {

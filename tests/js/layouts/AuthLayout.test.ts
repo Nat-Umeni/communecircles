@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import { page } from '../support/page';
+import { page } from '@tests/support';
 
 describe('AuthLayout', () => {
     it('shows the heading, description and the form in a card, with the logo linking home', () => {

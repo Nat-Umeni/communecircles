@@ -13,16 +13,21 @@ interface TestPage {
     flash: { status?: string };
 }
 
+/**
+ * The languages HandleInertiaRequests shares, as the test page has them.
+ */
+export const locales = [
+    { value: 'en', label: 'English' },
+    { value: 'sw', label: 'Kiswahili' },
+];
+
 function freshPage(): TestPage {
     return {
         component: 'Home',
         props: {
             auth: { user: null },
             locale: 'en',
-            locales: [
-                { value: 'en', label: 'English' },
-                { value: 'sw', label: 'Kiswahili' },
-            ],
+            locales: [...locales],
             errors: {},
         },
         flash: {},

@@ -1,22 +1,19 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ResetPassword from '@/pages/auth/ResetPassword.vue';
-import { visit } from '../../support/form';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter, field, links, visit } from '@tests/support';
 
 function resetPassword() {
     return mount(ResetPassword, { props: { token: 'token-from-email', email: 'ada@example.com' } });
 }
-
-const field = (wrapper: ReturnType<typeof mount>, name: string) => wrapper.get(`[name="${name}"]`);
 
 describe('ResetPassword', () => {
     it('fills in the email from the link and asks for the new password twice, with a link to ask for a new one', () => {
         const wrapper = resetPassword();
 
         expect(wrapper.get('h1').text()).toBe('Choose a new password');
-        expect((field(wrapper, 'email').element as HTMLInputElement).value).toBe('ada@example.com');
-        expect(wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])).toContainEqual(['Ask for a new one', '/password.request']);
+        expect(field(wrapper, 'email').element.value).toBe('ada@example.com');
+        expect(links(wrapper)).toContainEqual(['Ask for a new one', '/password.request']);
     });
 
     it('sets the new password with the token from the link', async () => {
@@ -44,8 +41,8 @@ describe('ResetPassword', () => {
         expect(wrapper.get('button[type="submit"]').text()).toBe('Saving…');
 
         await visit.finish(wrapper);
-        expect((field(wrapper, 'password').element as HTMLInputElement).value).toBe('');
-        expect((field(wrapper, 'password_confirmation').element as HTMLInputElement).value).toBe('');
+        expect(field(wrapper, 'password').element.value).toBe('');
+        expect(field(wrapper, 'password_confirmation').element.value).toBe('');
     });
 
     it('shows a problem with the link under the email, whether it is reported on the email or the token', async () => {

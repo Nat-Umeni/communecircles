@@ -1,16 +1,14 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import SidebarAccount from '@/components/account/SidebarAccount.vue';
-import { signIn } from '../../support/page';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter, links, signIn } from '@tests/support';
 
 describe('SidebarAccount', () => {
     it('invites guests to log in or register', () => {
         const wrapper = mount(SidebarAccount);
-        const links = wrapper.findAll('a');
 
         expect(wrapper.text()).toContain('Join to ask questions');
-        expect(links.map((link) => [link.text(), link.attributes('href')])).toEqual([
+        expect(links(wrapper)).toEqual([
             ['Log in', '/login'],
             ['Register', '/auth.register.create'],
         ]);

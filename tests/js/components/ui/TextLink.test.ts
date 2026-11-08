@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import TextLink from '@/components/ui/TextLink.vue';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter } from '@tests/support';
 
 describe('TextLink', () => {
     it('renders an app link that navigates through Inertia', async () => {

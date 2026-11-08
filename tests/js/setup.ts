@@ -1,8 +1,6 @@
 import { config } from '@vue/test-utils';
 import { afterEach, vi } from 'vitest';
-import { page, resetPage } from './support/page';
-import { fakeRoute } from './support/route';
-import { fakeRouter } from './support/router';
+import { fakeRoute, fakeRouter, page, resetPage } from '@tests/support';
 
 // route() as imported in <script setup> (`import { route } from 'ziggy-js'`).
 vi.mock('ziggy-js', async () => ({ route: (await import('./support/route')).fakeRoute }));

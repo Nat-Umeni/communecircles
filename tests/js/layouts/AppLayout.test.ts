@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { page, signIn } from '../support/page';
+import { page, signIn } from '@tests/support';
 
 describe('AppLayout', () => {
     it('wraps the page in the header and sidebar', () => {
