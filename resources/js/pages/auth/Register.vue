@@ -64,7 +64,7 @@ function submit(): void {
                 </form>
             </Card>
 
-            <!-- Restore once a named login route exists (route() throws for unknown names), and import TextLink from @/components/ui/TextLink.vue:
+            <!-- TODO: restore once the login page is done (route() throws for unknown names), importing TextLink again:
             <p class="text-center text-muted-foreground">Already have an account? <TextLink :href="route('auth.login.create')">Log in</TextLink></p>
             -->
         </div>
