@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#184D3B">
 
-        {{-- Apply the saved or system theme before first paint so dark mode doesn't flash light. Keep in sync with resources/js/composables/useTheme.js. --}}
+        {{-- Apply the saved or system theme before first paint so dark mode doesn't flash light. Keep in sync with resources/js/composables/useTheme.ts. --}}
         <script>
             (() => {
                 let theme = 'system';
@@ -18,7 +18,7 @@
         </script>
 
         @fonts
-        @vite('resources/js/app.js')
+        @vite('resources/js/app.ts')
         <x-inertia::head>
             <title>{{ config('app.name', 'Commune Circles') }}</title>
         </x-inertia::head>

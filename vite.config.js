@@ -9,7 +9,7 @@ import themeTokens from './resources/theme/vite-plugin.js';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/js/app.js'],
+            input: ['resources/js/app.ts'],
             refresh: true,
             fonts: [
                 bunny('Nunito', {

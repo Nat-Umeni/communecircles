@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -8,15 +8,16 @@ import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
+import type { Circle, Option } from '@/types';
 
 // From app/Http/Controllers/HomeController.php, plus locale/locales shared by HandleInertiaRequests.
-const props = defineProps({
-    circles: { type: Array, required: true },
-    locale: { type: String, required: true },
-    locales: { type: Array, required: true },
-});
+const props = defineProps<{
+    circles: Circle[];
+    locale: string;
+    locales: Option[];
+}>();
 
-const feeds = [
+const feeds: Option[] = [
     { value: 'latest', label: 'Latest' },
     { value: 'circles', label: 'Circles' },
 ];

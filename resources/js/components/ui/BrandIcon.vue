@@ -1,24 +1,15 @@
-<script setup>
-defineProps({
-    // File name in public/images/icons, without the extension, e.g. "explore".
-    name: {
-        type: String,
-        required: true,
-    },
-    size: {
-        type: Number,
-        default: 40,
-    },
-    disabled: {
-        type: Boolean,
-        default: false,
-    },
-    // Leave empty when a visible label sits next to the icon.
-    alt: {
-        type: String,
-        default: '',
-    },
-});
+<script setup lang="ts">
+withDefaults(
+    defineProps<{
+        /** File name in public/images/icons, without the extension, e.g. "explore". */
+        name: string;
+        size?: number;
+        disabled?: boolean;
+        /** Leave empty when a visible label sits next to the icon. */
+        alt?: string;
+    }>(),
+    { size: 40, alt: '' },
+);
 </script>
 
 <template>

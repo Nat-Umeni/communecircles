@@ -1,21 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import Card from '@/components/ui/Card.vue';
 import Tag from '@/components/ui/Tag.vue';
+import type { Circle } from '@/types';
 
-defineProps({
-    name: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
-    channels: {
-        type: Array,
-        required: true,
-    },
-});
+defineProps<Circle>();
 </script>
 
 <template>

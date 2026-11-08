@@ -1,17 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 
-defineProps({
-    href: {
-        type: String,
-        required: true,
-    },
-    // Use a plain <a> for links that leave the app.
-    external: {
-        type: Boolean,
-        default: false,
-    },
-});
+defineProps<{
+    href: string;
+    /** Use a plain <a> for links that leave the app. */
+    external?: boolean;
+}>();
 </script>
 
 <template>

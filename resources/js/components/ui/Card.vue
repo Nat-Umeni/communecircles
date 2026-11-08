@@ -1,19 +1,10 @@
-<script setup>
-defineProps({
-    title: {
-        type: String,
-        default: null,
-    },
-    description: {
-        type: String,
-        default: null,
-    },
-    // Shows the small accent dot before the title, as on the circle cards.
-    marker: {
-        type: Boolean,
-        default: false,
-    },
-});
+<script setup lang="ts">
+defineProps<{
+    title?: string;
+    description?: string;
+    /** Shows the small accent dot before the title, as on the circle cards. */
+    marker?: boolean;
+}>();
 </script>
 
 <template>

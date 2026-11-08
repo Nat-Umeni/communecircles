@@ -1,13 +1,14 @@
-<script setup>
-defineProps({
-    variant: {
-        type: String,
-        default: 'primary',
-        validator: (value) => ['primary', 'secondary', 'accent', 'success', 'warning', 'danger'].includes(value),
-    },
-});
+<script setup lang="ts">
+type Variant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger';
 
-const variants = {
+withDefaults(
+    defineProps<{
+        variant?: Variant;
+    }>(),
+    { variant: 'primary' },
+);
+
+const variants: Record<Variant, string> = {
     primary: 'bg-primary text-primary-foreground',
     secondary: 'bg-secondary text-secondary-foreground',
     accent: 'bg-accent text-accent-foreground',

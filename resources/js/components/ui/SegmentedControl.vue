@@ -1,39 +1,26 @@
-<script setup>
-const model = defineModel({ type: String, required: true });
+<script setup lang="ts">
+import type { Option } from '@/types';
 
-defineProps({
-    // [{ value, label, icon? }] — options with an icon show only the icon, with the label for screen readers.
-    options: {
-        type: Array,
-        required: true,
-    },
-    shape: {
-        type: String,
-        default: 'rounded',
-        validator: (value) => ['rounded', 'pill'].includes(value),
-    },
-    // "brand" is for use on the dark green header bar.
-    tone: {
-        type: String,
-        default: 'default',
-        validator: (value) => ['default', 'brand'].includes(value),
-    },
-    // Stretch to full width with equal-width segments (the Latest / Circles tabs).
-    block: {
-        type: Boolean,
-        default: false,
-    },
-    label: {
-        type: String,
-        default: null,
-    },
-});
+const model = defineModel<string>({ required: true });
+
+withDefaults(
+    defineProps<{
+        options: Option[];
+        shape?: 'rounded' | 'pill';
+        /** "brand" is for use on the dark green header bar. */
+        tone?: 'default' | 'brand';
+        /** Stretch to full width with equal-width segments (the Latest / Circles tabs). */
+        block?: boolean;
+        label?: string;
+    }>(),
+    { shape: 'rounded', tone: 'default' },
+);
 </script>
 
 <template>
     <div
         role="group"
-        :aria-label="label ?? undefined"
+        :aria-label="label"
         :class="[
             'items-center gap-1 p-1',
             block ? 'flex w-full' : 'inline-flex',

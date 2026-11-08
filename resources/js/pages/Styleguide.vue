@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -13,14 +13,37 @@ import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
 
+interface PaletteColour {
+    name: string;
+    hex: string;
+}
+
+interface ThemeColour {
+    name: string;
+    foreground: string | null;
+    light: PaletteColour;
+    dark: PaletteColour;
+}
+
+interface PaletteGroup {
+    group: string;
+    shades: (PaletteColour & { description: string | null })[];
+}
+
+interface Font {
+    name: string;
+    family: string;
+    description: string | null;
+}
+
 // From app/Http/Controllers/StyleguideController.php, which reads resources/theme/tokens.json.
-defineProps({
-    tokensPath: { type: String, required: true },
-    themeColours: { type: Array, required: true },
-    palette: { type: Array, required: true },
-    fonts: { type: Array, required: true },
-    icons: { type: Array, required: true },
-});
+defineProps<{
+    tokensPath: string;
+    themeColours: ThemeColour[];
+    palette: PaletteGroup[];
+    fonts: Font[];
+    icons: string[];
+}>();
 
 // Demo state for the interactive examples below.
 const tabs = ref('circles');
@@ -66,7 +89,7 @@ const text = ref('');
                 <div v-for="group in palette" :key="group.group" class="flex flex-col gap-2">
                     <h4 class="text-sm font-extrabold tracking-[0.12em] text-muted-foreground uppercase">{{ group.group }}</h4>
                     <div class="flex flex-wrap gap-3">
-                        <div v-for="shade in group.shades" :key="shade.name" class="flex w-28 flex-col gap-1 text-xs" :title="shade.description">
+                        <div v-for="shade in group.shades" :key="shade.name" class="flex w-28 flex-col gap-1 text-xs" :title="shade.description ?? undefined">
                             <div class="h-12 rounded-control border border-border" :style="{ background: shade.hex }" />
                             <span class="font-semibold text-heading">{{ shade.name }}</span>
                             <span class="text-muted-foreground">{{ shade.hex }}</span>

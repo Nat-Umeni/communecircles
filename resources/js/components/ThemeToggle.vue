@@ -1,18 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { Monitor, Moon, Sun } from '@lucide/vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import { useTheme } from '@/composables/useTheme';
+import type { Option } from '@/types';
 
-defineProps({
-    tone: {
-        type: String,
-        default: 'default',
-    },
-});
+withDefaults(
+    defineProps<{
+        tone?: 'default' | 'brand';
+    }>(),
+    { tone: 'default' },
+);
 
 const { theme } = useTheme();
 
-const options = [
+const options: Option[] = [
     { value: 'light', label: 'Light theme', icon: Sun },
     { value: 'system', label: 'Match system theme', icon: Monitor },
     { value: 'dark', label: 'Dark theme', icon: Moon },

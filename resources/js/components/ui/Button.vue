@@ -1,29 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-const props = defineProps({
-    variant: {
-        type: String,
-        default: 'primary',
-        validator: (value) => ['primary', 'secondary', 'accent', 'surface', 'ghost'].includes(value),
-    },
-    size: {
-        type: String,
-        default: 'md',
-        validator: (value) => ['sm', 'md', 'lg'].includes(value),
-    },
-    href: {
-        type: String,
-        default: null,
-    },
-    type: {
-        type: String,
-        default: 'button',
-    },
-});
+type Variant = 'primary' | 'secondary' | 'accent' | 'surface' | 'ghost';
+type Size = 'sm' | 'md' | 'lg';
 
-const variants = {
+const props = withDefaults(
+    defineProps<{
+        variant?: Variant;
+        size?: Size;
+        /** With no href the button renders as a plain <button>. */
+        href?: string;
+        type?: 'button' | 'submit' | 'reset';
+    }>(),
+    { variant: 'primary', size: 'md', type: 'button' },
+);
+
+const variants: Record<Variant, string> = {
     primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
     secondary: 'bg-secondary text-secondary-foreground hover:bg-highlight',
     accent: 'bg-accent text-accent-foreground hover:bg-accent/85',
@@ -31,7 +24,7 @@ const variants = {
     ghost: 'text-heading hover:bg-secondary',
 };
 
-const sizes = {
+const sizes: Record<Size, string> = {
     sm: 'h-9 px-3.5 text-sm',
     md: 'h-11 px-5 text-base',
     lg: 'h-14 px-6 text-lg',

@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { Menu, X } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 
 // Whether the sidebar drawer is open on small screens (shared with AppSidebar through AppLayout).
-const sidebarOpen = defineModel('sidebarOpen', { type: Boolean, required: true });
+const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
 </script>
 
 <template>

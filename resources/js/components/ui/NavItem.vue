@@ -1,27 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import BrandIcon from '@/components/ui/BrandIcon.vue';
 
-defineProps({
-    href: {
-        type: String,
-        default: null,
-    },
-    icon: {
-        type: String,
-        required: true,
-    },
-    active: {
-        type: Boolean,
-        default: false,
-    },
-});
+defineProps<{
+    href?: string;
+    icon: string;
+    active?: boolean;
+}>();
 </script>
 
 <template>
     <component
         :is="href ? Link : 'span'"
-        :href="href ?? undefined"
+        :href="href"
         :aria-current="active ? 'page' : undefined"
         :class="[
             'flex cursor-pointer items-center gap-3 rounded-control px-3 py-2 font-heading text-lg font-bold transition-colors',

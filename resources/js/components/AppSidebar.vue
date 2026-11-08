@@ -1,14 +1,14 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import Input from '@/components/ui/Input.vue';
 import NavItem from '@/components/ui/NavItem.vue';
 
 // Whether the drawer is open on small screens. From lg up the sidebar is always shown.
-const open = defineModel('open', { type: Boolean, required: true });
+const open = defineModel<boolean>('open', { required: true });
 const search = ref('');
 
-function closeOnEscape(event) {
+function closeOnEscape(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
         open.value = false;
     }
