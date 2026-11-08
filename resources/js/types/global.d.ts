@@ -7,6 +7,10 @@ import type { AuthUser, Option } from '@/types';
  */
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
+        /** One-off messages from Inertia::flash(), e.g. "Your password has been reset." */
+        flashDataType: {
+            status?: string;
+        };
         sharedPageProps: {
             auth: {
                 user: AuthUser | null;

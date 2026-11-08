@@ -7,6 +7,8 @@ export interface AuthUser {
     first_name: string;
     last_name: string;
     email: string;
+    /** Whether they've clicked the link in their confirmation email. */
+    email_verified: boolean;
 }
 
 /**

@@ -4,6 +4,7 @@ import { LogOut, Pencil, Settings } from '@lucide/vue';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import Alert from '@/components/ui/Alert.vue';
 import Badge from '@/components/ui/Badge.vue';
 import BrandIcon from '@/components/ui/BrandIcon.vue';
 import Button from '@/components/ui/Button.vue';
@@ -168,6 +169,16 @@ const checked = ref(false);
                     <Checkbox v-model="checked" />
                     Checkbox with its label
                 </label>
+            </div>
+        </Card>
+
+        <Card title="Alerts" description="Short messages, like the ones flashed after resetting a password. Both layouts show a flashed status in a success Alert.">
+            <div class="flex max-w-xl flex-col gap-3">
+                <Alert>Your password has been reset. You can log in with it now.</Alert>
+                <Alert variant="warning">
+                    Please confirm your email address. We sent a link to <strong class="font-semibold">ada@example.com</strong>.
+                    <TextLink href="#" external>Send it again</TextLink>
+                </Alert>
             </div>
         </Card>
 
