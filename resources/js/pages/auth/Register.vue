@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
+import { useTooManyAttempts } from '@/composables/useTooManyAttempts';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
+import TextLink from '@/components/ui/TextLink.vue';
 import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
 import PasswordInput from '@/components/ui/form/PasswordInput.vue';
@@ -20,6 +22,7 @@ const form = useForm({
 function submit(): void {
     form.post(route('auth.register.store'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
+        onHttpException: useTooManyAttempts((message) => form.setError('email', message)),
     });
 }
 </script>
@@ -64,9 +67,7 @@ function submit(): void {
                 </form>
             </Card>
 
-            <!-- TODO: restore once the login page is done (route() throws for unknown names), importing TextLink again:
-            <p class="text-center text-muted-foreground">Already have an account? <TextLink :href="route('auth.login.create')">Log in</TextLink></p>
-            -->
+            <p class="text-center text-muted-foreground">Already have an account? <TextLink :href="route('login')">Log in</TextLink></p>
         </div>
     </AppLayout>
 </template>

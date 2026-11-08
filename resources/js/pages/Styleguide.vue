@@ -12,6 +12,7 @@ import NavItem from '@/components/ui/NavItem.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
+import Checkbox from '@/components/ui/form/Checkbox.vue';
 import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
 import PasswordInput from '@/components/ui/form/PasswordInput.vue';
@@ -55,6 +56,7 @@ const tabs = ref('circles');
 const language = ref('en');
 const text = ref('');
 const password = ref('');
+const checked = ref(false);
 </script>
 
 <template>
@@ -162,6 +164,10 @@ const password = ref('');
                 <FormField v-slot="field" label="Password">
                     <PasswordInput v-bind="field" v-model="password" autocomplete="off" />
                 </FormField>
+                <label class="flex cursor-pointer items-center gap-3 self-start">
+                    <Checkbox v-model="checked" />
+                    Checkbox with its label
+                </label>
             </div>
         </Card>
 

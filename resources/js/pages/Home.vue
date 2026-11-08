@@ -38,8 +38,7 @@ const language = ref(props.locale);
             <!-- TODO: link to the explore page once it's done. -->
             <Button v-if="$page.props.auth.user" variant="accent" size="lg">Explore communes</Button>
             <template v-else>
-                <!-- TODO: link to the login page once it's done. -->
-                <Button variant="surface" size="lg">Log in</Button>
+                <Button variant="surface" size="lg" :href="route('login')">Log in</Button>
                 <Button variant="accent" size="lg" :href="route('auth.register.create')">Join the Circle</Button>
             </template>
         </HeroPanel>
