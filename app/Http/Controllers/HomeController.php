@@ -18,7 +18,9 @@ class HomeController extends Controller
     }
 
     /**
-     * Circles from the mockups, until circles are stored in the database.
+     * Circles from the mockups.
+     *
+     * TODO: load them from the database once circles are stored.
      *
      * @return list<array{name: string, description: string, channels: list<string>}>
      */
