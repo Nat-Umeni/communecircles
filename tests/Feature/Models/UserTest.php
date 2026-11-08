@@ -37,11 +37,19 @@ class UserTest extends TestCase
         $this->assertArrayNotHasKey('remember_token', $serialised);
     }
 
+    public function test_mass_assigns_the_first_and_last_name(): void
+    {
+        $user = new User(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+
+        $this->assertSame('Ada', $user->first_name);
+        $this->assertSame('Lovelace', $user->last_name);
+    }
+
     public function test_ignores_attributes_that_are_not_mass_assignable(): void
     {
-        $user = new User(['name' => 'Member', 'remember_token' => 'injected']);
+        $user = new User(['email' => 'member@example.com', 'remember_token' => 'injected']);
 
-        $this->assertSame('Member', $user->name);
+        $this->assertSame('member@example.com', $user->email);
         $this->assertNull($user->remember_token);
     }
 }
