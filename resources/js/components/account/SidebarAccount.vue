@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { Settings, UserRound } from '@lucide/vue';
+import { LogOut, Settings, UserRound } from '@lucide/vue';
 import { computed } from 'vue';
 import Button from '@/components/ui/Button.vue';
+import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
+import MenuItem from '@/components/ui/menu/MenuItem.vue';
 
 const page = usePage();
 
@@ -20,14 +22,16 @@ const user = computed(() => page.props.auth.user);
             <span class="truncate font-heading font-bold text-heading">{{ user.first_name }} {{ user.last_name }}</span>
             <span class="truncate text-sm text-muted-foreground">{{ user.email }}</span>
         </div>
-        <!-- TODO: link to the settings page once it's done. -->
-        <button
-            type="button"
-            class="grid size-10 shrink-0 place-items-center rounded-control text-muted-foreground transition-colors hover:bg-secondary hover:text-heading focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            aria-label="Settings"
-        >
-            <Settings class="size-5" aria-hidden="true" />
-        </button>
+        <DropdownMenu label="Account menu" side="top">
+            <template #trigger>
+                <Settings class="size-5" aria-hidden="true" />
+            </template>
+            <!-- TODO: add a Settings item once the settings page is done. -->
+            <MenuItem :href="route('auth.logout')" method="post">
+                <LogOut class="size-4" aria-hidden="true" />
+                Log out
+            </MenuItem>
+        </DropdownMenu>
     </div>
 
     <div v-else class="flex flex-col gap-3 rounded-card border border-border bg-background p-4">
