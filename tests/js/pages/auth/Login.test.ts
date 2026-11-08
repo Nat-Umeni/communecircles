@@ -1,10 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Login from '@/pages/auth/Login.vue';
-import { visit } from '../../support/form';
-import { fakeRouter } from '../../support/router';
-
-const field = (wrapper: ReturnType<typeof mount>, name: string) => wrapper.get(`[name="${name}"]`);
+import { fakeRouter, field, links, visit } from '@tests/support';
 
 describe('Login', () => {
     it('asks for an email, password and remember me, with links to reset a password or register', () => {
@@ -14,8 +11,8 @@ describe('Login', () => {
         expect(field(wrapper, 'email').attributes('type')).toBe('email');
         expect(field(wrapper, 'password').attributes('type')).toBe('password');
         expect(field(wrapper, 'remember').attributes('type')).toBe('checkbox');
-        expect(wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])).toContainEqual(['Forgot your password?', '/password.request']);
-        expect(wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])).toContainEqual(['Join the Circle', '/auth.register.create']);
+        expect(links(wrapper)).toContainEqual(['Forgot your password?', '/password.request']);
+        expect(links(wrapper)).toContainEqual(['Join the Circle', '/auth.register.create']);
     });
 
     it('logs in with the details typed in', async () => {
@@ -41,8 +38,8 @@ describe('Login', () => {
 
         await visit.finish(wrapper);
         expect(wrapper.get('button[type="submit"]').text()).toBe('Log in');
-        expect((field(wrapper, 'password').element as HTMLInputElement).value).toBe('');
-        expect((field(wrapper, 'email').element as HTMLInputElement).value).toBe('ada@example.com');
+        expect(field(wrapper, 'password').element.value).toBe('');
+        expect(field(wrapper, 'email').element.value).toBe('ada@example.com');
     });
 
     it('shows the error from the server under the email', async () => {

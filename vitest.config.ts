@@ -19,6 +19,8 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve('resources/js'),
+            // Shared test helpers: import { … } from '@tests/support'.
+            '@tests': path.resolve('tests/js'),
             'ziggy-js': path.resolve('vendor/tightenco/ziggy'),
         },
     },

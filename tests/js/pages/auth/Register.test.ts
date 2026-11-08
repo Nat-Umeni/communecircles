@@ -1,12 +1,9 @@
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Register from '@/pages/auth/Register.vue';
-import { visit } from '../../support/form';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter, field, links, visit } from '@tests/support';
 
-const field = (wrapper: ReturnType<typeof mount>, name: string) => wrapper.get(`[name="${name}"]`);
-
-async function fillIn(wrapper: ReturnType<typeof mount>): Promise<void> {
+async function fillIn(wrapper: VueWrapper): Promise<void> {
     await field(wrapper, 'first_name').setValue('Ada');
     await field(wrapper, 'last_name').setValue('Lovelace');
     await field(wrapper, 'email').setValue('ada@example.com');
@@ -20,7 +17,7 @@ describe('Register', () => {
 
         expect(wrapper.get('h1').text()).toBe('Join the Circle');
         expect(wrapper.text()).toContain('At least 8 characters, with a letter, a number and a symbol.');
-        expect(wrapper.findAll('a').map((link) => [link.text(), link.attributes('href')])).toContainEqual(['Log in', '/login']);
+        expect(links(wrapper)).toContainEqual(['Log in', '/login']);
     });
 
     it('creates the account with the details typed in', async () => {
@@ -45,9 +42,9 @@ describe('Register', () => {
         expect(wrapper.get('button[type="submit"]').text()).toBe('Creating your account…');
 
         await visit.finish(wrapper);
-        expect((field(wrapper, 'password').element as HTMLInputElement).value).toBe('');
-        expect((field(wrapper, 'password_confirmation').element as HTMLInputElement).value).toBe('');
-        expect((field(wrapper, 'first_name').element as HTMLInputElement).value).toBe('Ada');
+        expect(field(wrapper, 'password').element.value).toBe('');
+        expect(field(wrapper, 'password_confirmation').element.value).toBe('');
+        expect(field(wrapper, 'first_name').element.value).toBe('Ada');
     });
 
     it('shows how long to wait after too many attempts', async () => {

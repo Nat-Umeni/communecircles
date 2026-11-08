@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Styleguide from '@/pages/Styleguide.vue';
+import { groupButtons } from '@tests/support';
 
 const props = {
     tokensPath: 'resources/theme/tokens.json',
@@ -52,23 +53,23 @@ describe('Styleguide', () => {
 
     it('keeps the form control demos working', async () => {
         const wrapper = styleguide();
-        const example = wrapper.get('input[aria-label="Example input"]');
+        const example = wrapper.get<HTMLInputElement>('input[aria-label="Example input"]');
         const hintId = wrapper.findAll('label').find((label) => label.text() === 'Field with a hint')!.attributes('for');
-        const withHint = wrapper.get(`[id="${hintId}"]`);
+        const withHint = wrapper.get<HTMLInputElement>(`[id="${hintId}"]`);
 
         await example.setValue('typed');
-        expect((withHint.element as HTMLInputElement).value).toBe('typed');
+        expect(withHint.element.value).toBe('typed');
 
         await withHint.setValue('typed again');
-        expect((example.element as HTMLInputElement).value).toBe('typed again');
+        expect(example.element.value).toBe('typed again');
 
-        const password = wrapper.get('input[type="password"]');
+        const password = wrapper.get<HTMLInputElement>('input[type="password"]');
         await password.setValue('Analytical1!');
-        expect((password.element as HTMLInputElement).value).toBe('Analytical1!');
+        expect(password.element.value).toBe('Analytical1!');
 
-        const checkbox = wrapper.get('input[type="checkbox"]');
+        const checkbox = wrapper.get<HTMLInputElement>('input[type="checkbox"]');
         await checkbox.setValue(true);
-        expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+        expect(checkbox.element.checked).toBe(true);
     });
 
     it('demos the dropdown menu', async () => {
@@ -82,8 +83,8 @@ describe('Styleguide', () => {
 
     it('keeps the segmented control demos working', async () => {
         const wrapper = styleguide();
-        const tabs = () => wrapper.get('[role="group"][aria-label="Example tabs"]').findAll('button');
-        const pill = () => wrapper.get('[role="group"][aria-label="Example pill switch"]').findAll('button');
+        const tabs = () => groupButtons(wrapper, 'Example tabs');
+        const pill = () => groupButtons(wrapper, 'Example pill switch');
 
         await tabs()[0].trigger('click');
         expect(tabs()[0].attributes('aria-pressed')).toBe('true');

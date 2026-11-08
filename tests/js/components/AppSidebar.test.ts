@@ -1,7 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 import AppSidebar from '@/components/AppSidebar.vue';
-import { page } from '../support/page';
+import { page } from '@tests/support';
 
 let wrapper: VueWrapper | undefined;
 
@@ -73,11 +73,11 @@ describe('AppSidebar', () => {
 
     it('has a post search box and the account block', async () => {
         const wrapper = sidebar(false);
-        const search = wrapper.get('input[type="search"]');
+        const search = wrapper.get<HTMLInputElement>('input[type="search"]');
 
         await search.setValue('compost');
 
-        expect((search.element as HTMLInputElement).value).toBe('compost');
+        expect(search.element.value).toBe('compost');
         expect(wrapper.text()).toContain('Log in');
     });
 });

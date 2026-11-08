@@ -1,8 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import VerifyEmailBanner from '@/components/account/VerifyEmailBanner.vue';
-import { signIn } from '../../support/page';
-import { fakeRouter } from '../../support/router';
+import { fakeRouter, signIn } from '@tests/support';
 
 describe('VerifyEmailBanner', () => {
     it('shows nothing to guests', () => {
