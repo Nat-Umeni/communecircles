@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -36,22 +37,17 @@ class RegisterController extends Controller
                 'max:255',
                 Rule::unique(User::class),
             ],
-            'password' => [
-                'required',
-                'confirmed',
-                Password::min(8)
-                    ->max(256)
-                    ->letters()
-                    // ->mixedCase()
-                    ->numbers()
-                    ->symbols(),
-                // ->uncompromised()
-            ],
+            // NOTE: the password rules are set in AppServiceProvider::boot(), shared with resetting a password.
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         $user = User::create($validated);
+
+        // Sends the confirmation email (Laravel listens for Registered, as User must verify its email).
+        event(new Registered($user));
+
         Auth::login($user);
 
-        return to_route('home');
+        return to_route('verification.notice');
     }
 }

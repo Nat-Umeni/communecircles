@@ -3,8 +3,10 @@
 namespace Tests\Feature\Http\Controllers\Auth;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -21,11 +23,11 @@ class RegisterControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->component('auth/Register'));
     }
 
-    public function test_valid_form_creates_the_account_logs_the_member_in_and_redirects_home(): void
+    public function test_valid_form_creates_the_account_logs_the_member_in_and_asks_them_to_check_their_inbox(): void
     {
         $response = $this->post(route('auth.register.store'), $this->validForm());
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('verification.notice'));
 
         $this->assertDatabaseHas(User::class, [
             'first_name' => 'Ada',
@@ -36,6 +38,18 @@ class RegisterControllerTest extends TestCase
         $this->assertTrue(Hash::check('Analytical1!', $user->password));
 
         $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_emails_the_new_member_a_link_to_confirm_their_address(): void
+    {
+        Notification::fake();
+
+        $this->post(route('auth.register.store'), $this->validForm());
+
+        $member = User::sole();
+        $this->assertFalse($member->hasVerifiedEmail());
+
+        Notification::assertSentTo($member, VerifyEmail::class);
     }
 
     public function test_rejects_an_empty_form_with_a_required_message_for_each_field(): void
