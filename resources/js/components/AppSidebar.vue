@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import SidebarAccount from '@/components/account/SidebarAccount.vue';
 import NavItem from '@/components/ui/NavItem.vue';
 import Input from '@/components/ui/form/Input.vue';
 
@@ -33,7 +34,8 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
         >
             <Input v-model="search" type="search" placeholder="Search posts" aria-label="Search posts" />
 
-            <!-- The icon is the file of that name in public/images/icons. Give an item an href (and active check) once its page exists. -->
+            <!-- NOTE: each icon is the file of that name in public/images/icons. -->
+            <!-- TODO: link each section once its page is done. -->
             <nav aria-label="Sections" class="flex flex-col gap-1">
                 <NavItem :href="route('home')" icon="circles" :active="$page.component === 'Home'">Circles</NavItem>
                 <NavItem icon="explore">Explore</NavItem>
@@ -42,11 +44,14 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
                 <NavItem icon="skills">Skills</NavItem>
                 <NavItem icon="community">Community</NavItem>
                 <NavItem icon="resources">Resources</NavItem>
-                <!-- Coming soon (its icon is already exported): <NavItem icon="seeds-plants">Seeds & Plants</NavItem> -->
+                <!-- TODO: add once Seeds & Plants is done (its icon is already exported): <NavItem icon="seeds-plants">Seeds & Plants</NavItem> -->
             </nav>
 
-            <div class="mt-auto pt-4 sm:hidden">
-                <ThemeToggle />
+            <div class="mt-auto flex flex-col gap-4 pt-4">
+                <div class="sm:hidden">
+                    <ThemeToggle />
+                </div>
+                <SidebarAccount />
             </div>
         </aside>
     </div>

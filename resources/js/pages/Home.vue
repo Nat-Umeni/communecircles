@@ -35,8 +35,13 @@ const language = ref(props.locale);
             title="A place to learn, connect, and build a more sustainable way of living."
             description="Join a Circle, ask the people already farming, building and living in community, and share what you learn."
         >
-            <Button variant="accent" size="lg" :href="route('auth.register.create')">Join the Circle</Button>
-            <Button variant="surface" size="lg">Log in</Button>
+            <!-- TODO: link to the explore page once it's done. -->
+            <Button v-if="$page.props.auth.user" variant="accent" size="lg">Explore communes</Button>
+            <template v-else>
+                <!-- TODO: link to the login page once it's done. -->
+                <Button variant="surface" size="lg">Log in</Button>
+                <Button variant="accent" size="lg" :href="route('auth.register.create')">Join the Circle</Button>
+            </template>
         </HeroPanel>
 
         <!--
@@ -70,6 +75,7 @@ const language = ref(props.locale);
         <Card v-else title="No posts yet" description="New posts from every circle will show up here." />
 
         <footer class="flex flex-col items-center gap-4 py-6">
+            <!-- TODO: link to the community rules once they're written. -->
             <TextLink href="#" external>Community rules</TextLink>
             <SegmentedControl v-model="language" shape="pill" label="Language" :options="locales" />
         </footer>
