@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Middleware;
 
+use App\Enums\Role;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
@@ -25,7 +26,7 @@ class HandleInertiaRequestsTest extends TestCase
             ->where('auth.user', null));
     }
 
-    public function test_shares_only_the_name_email_and_verification_of_the_signed_in_member(): void
+    public function test_shares_only_the_name_email_verification_and_role_of_the_signed_in_member(): void
     {
         $member = User::factory()->make([
             'first_name' => 'Ada',
@@ -41,7 +42,18 @@ class HandleInertiaRequestsTest extends TestCase
                 'last_name' => 'Lovelace',
                 'email' => 'ada@example.com',
                 'email_verified' => true,
+                'role' => ['value' => 'user', 'label' => 'User'],
             ]));
+    }
+
+    public function test_shares_a_staff_members_role_with_its_label(): void
+    {
+        $member = User::factory()->make(['role' => Role::SuperAdmin]);
+
+        $response = $this->actingAs($member)->get(route('home'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.user.role', ['value' => 'super_admin', 'label' => 'Super Admin']));
     }
 
     public function test_shares_that_a_member_has_not_confirmed_their_email_yet(): void

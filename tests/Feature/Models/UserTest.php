@@ -2,16 +2,20 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\Role;
 use App\Models\User;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
 use Carbon\CarbonInterface;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UserTest extends TestCase
 {
+    use LazilyRefreshDatabase;
+
     public function test_sends_the_queued_email_confirmation(): void
     {
         $user = User::factory()->unverified()->make();
@@ -74,5 +78,39 @@ class UserTest extends TestCase
 
         $this->assertSame('member@example.com', $user->email);
         $this->assertNull($user->remember_token);
+    }
+
+    public function test_does_not_let_the_role_be_mass_assigned(): void
+    {
+        $user = new User(['email' => 'member@example.com', 'role' => 'super_admin']);
+
+        $this->assertNull($user->role);
+    }
+
+    public function test_casts_the_role_to_the_role_enum(): void
+    {
+        $user = new User;
+        $user->role = 'admin';
+
+        $this->assertSame(Role::Admin, $user->role);
+    }
+
+    public function test_a_new_member_is_an_ordinary_user(): void
+    {
+        $user = User::create([
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'email' => 'ada@example.com',
+            'password' => 'Analytical1!',
+        ]);
+
+        $this->assertSame(Role::User, $user->fresh()->role);
+    }
+
+    public function test_the_factory_makes_ordinary_users_like_the_database_does(): void
+    {
+        $user = User::factory()->make();
+
+        $this->assertSame(Role::User, $user->role);
     }
 }

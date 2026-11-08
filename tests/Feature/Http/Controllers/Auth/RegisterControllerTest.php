@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Auth;
 
+use App\Enums\Role;
 use App\Models\User;
 use App\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -160,6 +161,13 @@ class RegisterControllerTest extends TestCase
         $this->assertDatabaseCount(User::class, 1);
 
         $this->assertAuthenticatedAs($member);
+    }
+
+    public function test_registering_cannot_choose_the_new_members_role(): void
+    {
+        $this->post(route('auth.register.store'), [...$this->validForm(), 'role' => 'super_admin']);
+
+        $this->assertSame(Role::User, User::sole()->role);
     }
 
     public function test_does_not_let_the_form_verify_the_email_or_set_the_remember_token(): void
