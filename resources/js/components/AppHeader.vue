@@ -20,8 +20,7 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
             <span class="sr-only">{{ sidebarOpen ? 'Close menu' : 'Open menu' }}</span>
         </button>
 
-        <!-- $page.props.homeUrl is shared with every page by app/Http/Middleware/HandleInertiaRequests.php. -->
-        <AppLogo :href="$page.props.homeUrl" />
+        <AppLogo :href="route('home')" />
 
         <div class="ml-auto hidden sm:block">
             <ThemeToggle tone="brand" />

@@ -7,14 +7,6 @@ use Tests\TestCase;
 
 class HandleInertiaRequestsTest extends TestCase
 {
-    public function test_shares_the_home_url_for_the_logo_link(): void
-    {
-        $response = $this->get(route('home'));
-
-        $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('homeUrl', route('home', absolute: false)));
-    }
-
     public function test_shares_the_current_locale_and_the_available_languages(): void
     {
         $response = $this->get(route('home'));

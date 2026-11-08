@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
@@ -35,6 +36,12 @@ export default defineConfig({
         inertia(),
         tailwindcss(),
     ],
+    resolve: {
+        alias: {
+            // Ziggy's route() helper ships with the Composer package.
+            'ziggy-js': path.resolve('vendor/tightenco/ziggy'),
+        },
+    },
     server: {
         host: '0.0.0.0', // accept connections from outside the node container
         port: 5173,
