@@ -19,7 +19,6 @@ const badgeVariants: Partial<Record<Role, 'accent' | 'primary'>> = {
     super_admin: 'primary',
 };
 
-const badgeVariant = computed(() => (user.value ? badgeVariants[user.value.role.value] : undefined));
 </script>
 
 <template>
@@ -31,7 +30,7 @@ const badgeVariant = computed(() => (user.value ? badgeVariants[user.value.role.
         <div class="flex min-w-0 flex-1 flex-col">
             <span class="truncate font-heading font-bold text-heading">{{ user.first_name }} {{ user.last_name }}</span>
             <span class="truncate text-sm text-muted-foreground">{{ user.email }}</span>
-            <Badge v-if="badgeVariant" :variant="badgeVariant" class="mt-1 self-start">{{ user.role.label }}</Badge>
+            <Badge v-if="badgeVariants[user.role.value]" :variant="badgeVariants[user.role.value]" class="mt-1 self-start">{{ user.role.label }}</Badge>
         </div>
         <DropdownMenu label="Account menu" side="top">
             <template #trigger>

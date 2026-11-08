@@ -17,10 +17,11 @@ function closeOnEscape(event: KeyboardEvent): void {
 
 onMounted(() => window.addEventListener('keydown', closeOnEscape));
 onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
+
+// NOTE: the root div is "contents" so the overlay and <aside> stay direct flex children of the layout, and lg:sticky still works.
 </script>
 
 <template>
-    <!-- "contents" keeps the overlay and <aside> as direct flex children of the layout, so lg:sticky still works. -->
     <div class="contents">
         <div v-if="open" class="fixed inset-0 top-16 z-30 bg-black/40 lg:hidden" aria-hidden="true" @click="open = false" />
 
