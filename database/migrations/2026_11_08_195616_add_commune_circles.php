@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('circles', function (Blueprint $table) {
             $table->id();
-            $table->uuid()->unique();
-            $table->string('name');
+            $table->char('public_id', 10)->unique();
+            $table->string('name')->unique();
             $table->text('description');
             $table->timestamps();
         });

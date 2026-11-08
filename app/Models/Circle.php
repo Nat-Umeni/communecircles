@@ -3,9 +3,9 @@
 namespace App\Models;
 
 use App\Enums\CircleRole;
+use App\Models\Concerns\HasPublicId;
 use Database\Factories\CircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -14,17 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Circle extends Model
 {
     /** @use HasFactory<CircleFactory> */
-    use HasFactory, HasUuids;
-
-    /**
-     * Generate the public uuid column, leaving the incrementing id as the primary key.
-     *
-     * @return list<string>
-     */
-    public function uniqueIds(): array
-    {
-        return ['uuid'];
-    }
+    use HasFactory, HasPublicId;
 
     public function owners(): BelongsToMany
     {

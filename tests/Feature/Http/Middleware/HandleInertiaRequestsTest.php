@@ -4,11 +4,14 @@ namespace Tests\Feature\Http\Middleware;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class HandleInertiaRequestsTest extends TestCase
 {
+    use LazilyRefreshDatabase;
+
     public function test_shares_the_current_locale_and_the_available_languages(): void
     {
         $response = $this->get(route('home'));
@@ -28,7 +31,7 @@ class HandleInertiaRequestsTest extends TestCase
 
     public function test_shares_only_the_name_email_verification_and_role_of_the_signed_in_member(): void
     {
-        $member = User::factory()->make([
+        $member = User::factory()->create([
             'first_name' => 'Ada',
             'last_name' => 'Lovelace',
             'email' => 'ada@example.com',
@@ -48,7 +51,7 @@ class HandleInertiaRequestsTest extends TestCase
 
     public function test_shares_a_staff_members_role_with_its_label(): void
     {
-        $member = User::factory()->make(['role' => Role::SuperAdmin]);
+        $member = User::factory()->create(['role' => Role::SuperAdmin]);
 
         $response = $this->actingAs($member)->get(route('home'));
 
@@ -58,11 +61,39 @@ class HandleInertiaRequestsTest extends TestCase
 
     public function test_shares_that_a_member_has_not_confirmed_their_email_yet(): void
     {
-        $member = User::factory()->unverified()->make();
+        $member = User::factory()->unverified()->create();
 
         $response = $this->actingAs($member)->get(route('home'));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->where('auth.user.email_verified', false));
+    }
+
+    public function test_shares_that_a_guest_cannot_create_circles(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.can.create_circle', false));
+    }
+
+    public function test_shares_that_a_member_whose_account_is_old_enough_can_create_circles(): void
+    {
+        $this->freezeSecond();
+        $member = User::factory()->create();
+        $this->travel(5)->minutes();
+
+        $response = $this->actingAs($member)->get(route('home'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.can.create_circle', true));
+    }
+
+    public function test_shares_that_a_brand_new_account_cannot_create_circles_yet(): void
+    {
+        $response = $this->actingAs(User::factory()->create())->get(route('home'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('auth.can.create_circle', false));
     }
 }

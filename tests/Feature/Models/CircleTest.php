@@ -6,20 +6,11 @@ use App\Enums\CircleRole;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CircleTest extends TestCase
 {
     use LazilyRefreshDatabase;
-
-    public function test_gives_each_new_circle_a_uuid_and_keeps_the_incrementing_id(): void
-    {
-        $circle = Circle::create(['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
-
-        $this->assertTrue(Str::isUuid($circle->uuid));
-        $this->assertIsInt($circle->id);
-    }
 
     public function test_mass_assigns_the_name_and_description(): void
     {
@@ -31,10 +22,10 @@ class CircleTest extends TestCase
 
     public function test_ignores_attributes_that_are_not_mass_assignable(): void
     {
-        $circle = new Circle(['name' => 'Exchange', 'uuid' => 'chosen-by-the-request']);
+        $circle = new Circle(['name' => 'Exchange', 'public_id' => 'chosenbyme']);
 
         $this->assertSame('Exchange', $circle->name);
-        $this->assertNull($circle->uuid);
+        $this->assertNull($circle->public_id);
     }
 
     public function test_members_are_everyone_in_the_circle_with_their_role(): void

@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -14,37 +15,80 @@ class CirclePolicyTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
-    #[DataProvider('siteRoles')]
-    public function test_only_internal_staff_can_list_every_circle(Role $role, bool $isInternal): void
-    {
-        $user = User::factory()->create(['role' => $role]);
-
-        $this->assertSame($isInternal, $user->can('viewAny', Circle::class));
-    }
-
-    #[DataProvider('circleRoles')]
-    public function test_every_member_can_view_their_circle(CircleRole $role): void
+    public function test_guests_can_browse_circles_and_see_their_public_pages(): void
     {
         $circle = Circle::factory()->create();
 
-        $this->assertTrue($this->memberOf($circle, $role)->can('view', $circle));
+        $this->assertTrue(Gate::allows('viewAny', Circle::class));
+        $this->assertTrue(Gate::allows('view', $circle));
     }
 
-    public function test_a_member_of_another_circle_cannot_view_this_one(): void
+    public function test_signed_in_users_can_browse_circles_and_see_their_public_pages(): void
+    {
+        $circle = Circle::factory()->create();
+        $outsider = User::factory()->create();
+
+        $this->assertTrue($outsider->can('viewAny', Circle::class));
+        $this->assertTrue($outsider->can('view', $circle));
+    }
+
+    #[DataProvider('circleRoles')]
+    public function test_every_member_can_view_their_circles_channels(CircleRole $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertTrue($this->memberOf($circle, $role)->can('viewChannels', $circle));
+    }
+
+    public function test_a_member_of_another_circle_cannot_view_this_ones_channels(): void
     {
         $circle = Circle::factory()->create();
         $this->memberOf($circle, CircleRole::Owner);
         $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
 
-        $this->assertFalse($outsider->can('view', $circle));
+        $this->assertFalse($outsider->can('viewChannels', $circle));
+    }
+
+    public function test_guests_cannot_view_a_circles_channels(): void
+    {
+        $this->assertFalse(Gate::allows('viewChannels', Circle::factory()->create()));
     }
 
     #[DataProvider('staffRoles')]
-    public function test_internal_staff_can_view_any_circle(Role $role): void
+    public function test_internal_staff_can_view_any_circles_channels(Role $role): void
     {
         $staff = User::factory()->create(['role' => $role]);
 
-        $this->assertTrue($staff->can('view', Circle::factory()->create()));
+        $this->assertTrue($staff->can('viewChannels', Circle::factory()->create()));
+    }
+
+    public function test_members_who_confirmed_their_email_can_ask_to_join_a_circle_they_are_not_in(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->memberOf($circle, CircleRole::Owner);
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertTrue($outsider->can('requestToJoin', $circle));
+    }
+
+    #[DataProvider('circleRoles')]
+    public function test_members_cannot_ask_to_join_a_circle_they_are_already_in(CircleRole $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($this->memberOf($circle, $role)->can('requestToJoin', $circle));
+    }
+
+    public function test_members_who_have_not_confirmed_their_email_cannot_ask_to_join(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->assertFalse($user->can('requestToJoin', Circle::factory()->create()));
+    }
+
+    public function test_guests_cannot_ask_to_join(): void
+    {
+        $this->assertFalse(Gate::allows('requestToJoin', Circle::factory()->create()));
     }
 
     public function test_members_can_create_circles_once_their_account_is_five_minutes_old(): void

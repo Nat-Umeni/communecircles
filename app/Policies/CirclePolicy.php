@@ -13,19 +13,35 @@ class CirclePolicy
     private const int MINUTES_BEFORE_NEW_ACCOUNTS_CAN_CREATE = 5;
 
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can browse and search circles. Guests can too, since every circle is public for now.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(?User $user): bool
     {
-        return $user->role->internal();
+        return true;
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can see the circle's public page (name, description, join button). Guests can too.
      */
-    public function view(User $user, Circle $circle): bool
+    public function view(?User $user, Circle $circle): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can see inside the circle: its channels, posts and members.
+     */
+    public function viewChannels(User $user, Circle $circle): bool
     {
         return $user->role->internal() || $circle->membershipOf($user) !== null;
+    }
+
+    /**
+     * Determine whether the user can ask to join the circle.
+     */
+    public function requestToJoin(User $user, Circle $circle): bool
+    {
+        return $user->hasVerifiedEmail() && $circle->membershipOf($user) === null;
     }
 
     /**
