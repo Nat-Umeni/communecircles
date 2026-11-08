@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLogo from '@/components/AppLogo.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import Alert from '@/components/ui/Alert.vue';
 import Card from '@/components/ui/Card.vue';
 
 defineProps<{
@@ -26,6 +27,9 @@ defineProps<{
                     <h1 class="text-3xl font-extrabold sm:text-4xl">{{ title }}</h1>
                     <p v-if="description" class="text-lg text-muted-foreground">{{ description }}</p>
                 </header>
+
+                <!-- One-off messages from Inertia::flash(), e.g. "Your password has been reset." -->
+                <Alert v-if="$page.flash.status">{{ $page.flash.status }}</Alert>
 
                 <!-- The page's form. -->
                 <Card>

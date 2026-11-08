@@ -38,11 +38,13 @@ function submit(): void {
                 <PasswordInput v-bind="field" v-model="form.password" name="password" autocomplete="current-password" required />
             </FormField>
 
-            <!-- TODO: add a "Forgot your password?" link once password resets are done. -->
-            <label class="flex cursor-pointer items-center gap-3 self-start">
-                <Checkbox v-model="form.remember" name="remember" />
-                Remember me
-            </label>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <label class="flex cursor-pointer items-center gap-3">
+                    <Checkbox v-model="form.remember" name="remember" />
+                    Remember me
+                </label>
+                <TextLink :href="route('password.request')">Forgot your password?</TextLink>
+            </div>
 
             <Button type="submit" size="lg" class="mt-2 w-full" :disabled="form.processing">
                 {{ form.processing ? 'Logging in…' : 'Log in' }}
