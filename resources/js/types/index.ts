@@ -1,7 +1,7 @@
 import type { Component } from 'vue';
 
 /**
- * A member's site-wide role (App\Enums\Role). Circle roles like chief belong to circle memberships, not here.
+ * A member's site-wide role: the value of App\Enums\Role. Circle roles like chief belong to circle memberships, not here.
  */
 export type Role = 'user' | 'admin' | 'super_admin';
 
@@ -14,7 +14,11 @@ export interface AuthUser {
     email: string;
     /** Whether they've clicked the link in their confirmation email. */
     email_verified: boolean;
-    role: Role;
+    /** The role's value and its display label, from App\Enums\Role::label(). */
+    role: {
+        value: Role;
+        label: string;
+    };
 }
 
 /**

@@ -13,13 +13,13 @@ const page = usePage();
 // Shared with every page by app/Http/Middleware/HandleInertiaRequests.php; null for guests.
 const user = computed(() => page.props.auth.user);
 
-// Staff get a badge next to their name; ordinary members don't.
-const roleBadges: Partial<Record<Role, { label: string; variant: 'accent' | 'primary' }>> = {
-    admin: { label: 'Admin', variant: 'accent' },
-    super_admin: { label: 'Super admin', variant: 'primary' },
+// Staff get a badge (with the label from PHP) under their email; ordinary members don't.
+const badgeVariants: Partial<Record<Role, 'accent' | 'primary'>> = {
+    admin: 'accent',
+    super_admin: 'primary',
 };
 
-const roleBadge = computed(() => (user.value ? roleBadges[user.value.role] : undefined));
+const badgeVariant = computed(() => (user.value ? badgeVariants[user.value.role.value] : undefined));
 </script>
 
 <template>
@@ -31,7 +31,7 @@ const roleBadge = computed(() => (user.value ? roleBadges[user.value.role] : und
         <div class="flex min-w-0 flex-1 flex-col">
             <span class="truncate font-heading font-bold text-heading">{{ user.first_name }} {{ user.last_name }}</span>
             <span class="truncate text-sm text-muted-foreground">{{ user.email }}</span>
-            <Badge v-if="roleBadge" :variant="roleBadge.variant" class="mt-1 self-start">{{ roleBadge.label }}</Badge>
+            <Badge v-if="badgeVariant" :variant="badgeVariant" class="mt-1 self-start">{{ user.role.label }}</Badge>
         </div>
         <DropdownMenu label="Account menu" side="top">
             <template #trigger>
