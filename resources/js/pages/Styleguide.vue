@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { LogOut, Pencil, Settings } from '@lucide/vue';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
@@ -14,6 +15,8 @@ import TextLink from '@/components/ui/TextLink.vue';
 import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
 import PasswordInput from '@/components/ui/form/PasswordInput.vue';
+import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
+import MenuItem from '@/components/ui/menu/MenuItem.vue';
 
 interface PaletteColour {
     name: string;
@@ -159,6 +162,24 @@ const password = ref('');
                 <FormField v-slot="field" label="Password">
                     <PasswordInput v-bind="field" v-model="password" autocomplete="off" />
                 </FormField>
+            </div>
+        </Card>
+
+        <Card title="Menus" description="DropdownMenu opens a list of MenuItems from a button. Arrow keys move between items; Escape or a click elsewhere closes it.">
+            <div class="flex gap-6">
+                <DropdownMenu label="Example menu">
+                    <template #trigger>
+                        <Settings class="size-5" aria-hidden="true" />
+                    </template>
+                    <MenuItem>
+                        <Pencil class="size-4" aria-hidden="true" />
+                        Edit
+                    </MenuItem>
+                    <MenuItem>
+                        <LogOut class="size-4" aria-hidden="true" />
+                        Log out
+                    </MenuItem>
+                </DropdownMenu>
             </div>
         </Card>
 
