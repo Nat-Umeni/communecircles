@@ -11,6 +11,23 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # Runs queued jobs, such as the confirmation and password reset emails.
+  # NOTE: the image's entrypoint always starts PHP-FPM, so this overrides it. queue:listen reloads the
+  # code for every job, so changes apply without restarting the worker (production would use queue:work).
+  queue:
+    build: .
+    entrypoint: ["php", "artisan", "queue:listen", "--tries=3", "--timeout=60"]
+    volumes:
+      - ./:/var/www
+    depends_on:
+      app:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.25-alpine
     ports:
