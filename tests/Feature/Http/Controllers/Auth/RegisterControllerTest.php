@@ -113,6 +113,19 @@ class RegisterControllerTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_throttles_registration_attempts_after_5_in_a_minute(): void
+    {
+        foreach (range(1, 5) as $attempt) {
+            $this->post(route('auth.register.store'), []);
+        }
+
+        $response = $this->post(route('auth.register.store'), $this->validForm());
+
+        $response->assertTooManyRequests();
+
+        $this->assertDatabaseEmpty(User::class);
+    }
+
     public function test_redirects_a_signed_in_member_away_from_the_register_page(): void
     {
         $member = User::factory()->create();
