@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { LogOut, Pencil, Settings } from '@lucide/vue';
+import { CirclePlus, LogOut, Pencil, Plus, Settings } from '@lucide/vue';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
@@ -197,6 +197,18 @@ const checked = ref(false);
                         Log out
                     </MenuItem>
                 </DropdownMenu>
+                <div class="flex items-center gap-3 rounded-control bg-brand p-3">
+                    <DropdownMenu label="Example brand menu" tone="brand">
+                        <template #trigger>
+                            <Plus class="size-5" aria-hidden="true" />
+                        </template>
+                        <MenuItem>
+                            <CirclePlus class="size-4" aria-hidden="true" />
+                            Create a circle
+                        </MenuItem>
+                    </DropdownMenu>
+                    <span class="text-sm text-brand-foreground">tone="brand" for the header bar</span>
+                </div>
             </div>
         </Card>
 

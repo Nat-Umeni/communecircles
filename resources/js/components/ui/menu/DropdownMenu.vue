@@ -7,8 +7,10 @@ withDefaults(
         label: string;
         /** Which side of the button the menu opens on. */
         side?: 'top' | 'bottom';
+        /** "brand" is for use on the dark green header bar. */
+        tone?: 'default' | 'brand';
     }>(),
-    { side: 'bottom' },
+    { side: 'bottom', tone: 'default' },
 );
 
 const open = ref(false);
@@ -109,7 +111,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown)
         <button
             ref="trigger"
             type="button"
-            class="grid size-10 shrink-0 place-items-center rounded-control text-muted-foreground transition-colors hover:bg-secondary hover:text-heading focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-expanded:bg-secondary aria-expanded:text-heading"
+            :class="[
+                'grid size-10 shrink-0 place-items-center transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                tone === 'brand'
+                    ? 'rounded-full bg-brand-foreground/10 text-brand-foreground/80 hover:bg-brand-foreground/20 hover:text-brand-foreground focus-visible:ring-brand-foreground aria-expanded:bg-brand-foreground aria-expanded:text-brand'
+                    : 'rounded-control text-muted-foreground hover:bg-secondary hover:text-heading focus-visible:ring-ring aria-expanded:bg-secondary aria-expanded:text-heading',
+            ]"
             :aria-label="label"
             aria-haspopup="menu"
             :aria-expanded="open"
