@@ -1,5 +1,5 @@
 import type { route as ziggyRoute } from 'ziggy-js';
-import type { Option } from '@/types';
+import type { AuthUser, Option } from '@/types';
 
 /**
  * Types $page.props and usePage().props for the props every page receives
@@ -8,6 +8,9 @@ import type { Option } from '@/types';
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
+            auth: {
+                user: AuthUser | null;
+            };
             locale: string;
             locales: Option[];
         };
