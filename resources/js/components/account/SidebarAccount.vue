@@ -27,7 +27,7 @@ const user = computed(() => page.props.auth.user);
                 <Settings class="size-5" aria-hidden="true" />
             </template>
             <!-- TODO: add a Settings item once the settings page is done. -->
-            <MenuItem :href="route('auth.logout')" method="post">
+            <MenuItem :href="route('logout')" method="post">
                 <LogOut class="size-4" aria-hidden="true" />
                 Log out
             </MenuItem>
@@ -37,8 +37,7 @@ const user = computed(() => page.props.auth.user);
     <div v-else class="flex flex-col gap-3 rounded-card border border-border bg-background p-4">
         <p class="text-sm text-muted-foreground">Join to ask questions, share what you know and take part in the circles.</p>
         <div class="grid grid-cols-2 gap-2">
-            <!-- TODO: link to the login page once it's done. -->
-            <Button variant="surface">Log in</Button>
+            <Button variant="surface" :href="route('login')">Log in</Button>
             <Button :href="route('auth.register.create')">Register</Button>
         </div>
     </div>
