@@ -52,7 +52,7 @@ export function signIn(overrides: Partial<AuthUser> = {}): AuthUser {
         last_name: 'Lovelace',
         email: 'ada@example.com',
         email_verified: true,
-        role: { value: 'user', label: 'User' },
+        role: { value: 'user', label: 'User', internal: false },
         ...overrides,
     };
 

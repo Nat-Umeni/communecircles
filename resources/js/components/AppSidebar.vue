@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ShieldCheck } from '@lucide/vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import SidebarAccount from '@/components/account/SidebarAccount.vue';
@@ -46,6 +47,12 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
                 <NavItem icon="community">Community</NavItem>
                 <NavItem icon="resources">Resources</NavItem>
                 <!-- TODO: add once Seeds & Plants is done (its icon is already exported): <NavItem icon="seeds-plants">Seeds & Plants</NavItem> -->
+            </nav>
+
+            <!-- NOTE: only hides the links; the pages themselves check the role (ApprovalPolicy). -->
+            <nav v-if="$page.props.auth.user?.role.internal" aria-label="Staff" class="flex flex-col gap-1 border-t border-border pt-4">
+                <p class="px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase" aria-hidden="true">Staff</p>
+                <NavItem :href="route('approvals.index')" :icon="ShieldCheck" :active="$page.component === 'approvals/Index'">Approvals</NavItem>
             </nav>
 
             <div class="mt-auto flex flex-col gap-4 pt-4">

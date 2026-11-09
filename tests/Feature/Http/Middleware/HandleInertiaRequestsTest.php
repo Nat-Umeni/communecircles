@@ -45,18 +45,18 @@ class HandleInertiaRequestsTest extends TestCase
                 'last_name' => 'Lovelace',
                 'email' => 'ada@example.com',
                 'email_verified' => true,
-                'role' => ['value' => 'user', 'label' => 'User'],
+                'role' => ['value' => 'user', 'label' => 'User', 'internal' => false],
             ]));
     }
 
-    public function test_shares_a_staff_members_role_with_its_label(): void
+    public function test_shares_a_staff_members_role_with_its_label_and_that_it_is_staff(): void
     {
         $member = User::factory()->make(['role' => Role::SuperAdmin]);
 
         $response = $this->actingAs($member)->get(route('home'));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('auth.user.role', ['value' => 'super_admin', 'label' => 'Super Admin']));
+            ->where('auth.user.role', ['value' => 'super_admin', 'label' => 'Super Admin', 'internal' => true]));
     }
 
     public function test_shares_that_a_member_has_not_confirmed_their_email_yet(): void

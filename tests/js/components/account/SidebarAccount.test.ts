@@ -27,7 +27,7 @@ describe('SidebarAccount', () => {
         ['admin', 'Admin', 'bg-accent'],
         ['super_admin', 'Super Admin', 'bg-primary'],
     ] as const)('shows the %s badge with the label from PHP', (value, label, colour) => {
-        signIn({ role: { value, label } });
+        signIn({ role: { value, label, internal: true } });
         const badge = mount(SidebarAccount).get('.uppercase');
 
         expect(badge.text()).toBe(label);

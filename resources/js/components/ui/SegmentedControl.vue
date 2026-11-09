@@ -9,7 +9,7 @@ withDefaults(
         shape?: 'rounded' | 'pill';
         /** "brand" is for use on the dark green header bar. */
         tone?: 'default' | 'brand';
-        /** Stretch to full width with equal-width segments (the Latest / Circles tabs). */
+        /** Stretch to full width with equal-width segments, e.g. for tabs. */
         block?: boolean;
         label?: string;
     }>(),

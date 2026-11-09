@@ -13,7 +13,7 @@ const exchange: NewCircleApproval = {
 };
 
 function queue(data: NewCircleApproval[], pages: Partial<Paginated<NewCircleApproval>> = {}): VueWrapper {
-    signIn({ role: { value: 'admin', label: 'Admin' } });
+    signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
 
     return mount(Index, {
         props: { approvals: { data, current_page: 1, last_page: 1, total: data.length, prev_page_url: null, next_page_url: null, ...pages } },

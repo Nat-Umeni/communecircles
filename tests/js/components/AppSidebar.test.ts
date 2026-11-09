@@ -1,7 +1,7 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 import AppSidebar from '@/components/AppSidebar.vue';
-import { page } from '@tests/support';
+import { links, page, signIn } from '@tests/support';
 
 let wrapper: VueWrapper | undefined;
 
@@ -22,9 +22,9 @@ describe('AppSidebar', () => {
     it('lists the sections, with Circles linking home and marked current on the circle list', () => {
         page.component = 'circles/Index';
         const wrapper = sidebar(false);
-        const circles = wrapper.get('nav a');
+        const circles = wrapper.get('nav[aria-label="Sections"] a');
 
-        expect(wrapper.findAll('nav > *').map((item) => item.text())).toEqual(['Circles', 'Explore', 'Learn', 'Exchange', 'Skills', 'Community', 'Resources']);
+        expect(wrapper.findAll('nav[aria-label="Sections"] > *').map((item) => item.text())).toEqual(['Circles', 'Explore', 'Learn', 'Exchange', 'Skills', 'Community', 'Resources']);
         expect(circles.attributes('href')).toBe('/home');
         expect(circles.attributes('aria-current')).toBe('page');
     });
@@ -32,7 +32,33 @@ describe('AppSidebar', () => {
     it('does not mark Circles current on other pages', () => {
         page.component = 'Styleguide';
 
-        expect(sidebar(false).get('nav a').attributes('aria-current')).toBeUndefined();
+        expect(sidebar(false).get('nav[aria-label="Sections"] a').attributes('aria-current')).toBeUndefined();
+    });
+
+    it('gives staff a link to the approvals queue, marked current there', () => {
+        signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
+        page.component = 'approvals/Index';
+        const staff = sidebar(false).get('nav[aria-label="Staff"]');
+
+        expect(links(staff)).toEqual([['Approvals', '/approvals.index']]);
+        expect(staff.get('a').attributes('aria-current')).toBe('page');
+        expect(staff.get('a svg').attributes('aria-hidden')).toBe('true');
+    });
+
+    it("doesn't mark Approvals current on other pages", () => {
+        signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
+        page.component = 'circles/Index';
+
+        expect(sidebar(false).get('nav[aria-label="Staff"] a').attributes('aria-current')).toBeUndefined();
+    });
+
+    it("doesn't show members or guests the staff links", () => {
+        signIn();
+        expect(sidebar(false).find('nav[aria-label="Staff"]').exists()).toBe(false);
+        wrapper!.unmount();
+
+        page.props.auth.user = null;
+        expect(sidebar(false).find('nav[aria-label="Staff"]').exists()).toBe(false);
     });
 
     it('is hidden off-screen on phones with no overlay until opened', () => {

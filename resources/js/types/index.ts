@@ -14,10 +14,11 @@ export interface AuthUser {
     email: string;
     /** Whether they've clicked the link in their confirmation email. */
     email_verified: boolean;
-    /** The role's value and its display label, from App\Enums\Role::label(). */
+    /** The role's value and its display label, from App\Enums\Role::label(); internal is true for staff. */
     role: {
         value: Role;
         label: string;
+        internal: boolean;
     };
 }
 

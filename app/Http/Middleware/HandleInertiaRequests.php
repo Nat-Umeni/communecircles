@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                     'role' => [
                         'value' => $user->role->value,
                         'label' => $user->role->label(),
+                        'internal' => $user->role->internal(),
                     ],
                     'email_verified' => $user->hasVerifiedEmail(),
                 ]
