@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ApprovalStatus;
 use App\Enums\ApprovalType;
 use App\Models\Circle;
 use App\Models\User;
@@ -89,16 +90,29 @@ class CirclePolicy
             ));
         }
 
+        // One at a time, so no one account can fill the approvals queue.
+        if ($user->hasCircleWaitingForApproval()) {
+            return Response::deny('You already have a circle waiting for approval. You can start another once the team has decided on it.');
+        }
+
         return Response::allow();
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Staff, and the circle's owners and admins. Saving a rejected circle sends it back to the team, so like starting
+     * one it waits while its starter has another circle waiting for approval.
      */
     public function update(User $user, Circle $circle): bool
     {
-        return $user->role->internal()
-            || ($circle->membershipOf($user)?->role->hasManagerRole() ?? false);
+        if ($user->role->internal()) {
+            return true;
+        }
+
+        if (! ($circle->membershipOf($user)?->role->hasManagerRole() ?? false)) {
+            return false;
+        }
+
+        return ! ($circle->approval->status === ApprovalStatus::Rejected && $circle->approval->user->hasCircleWaitingForApproval());
     }
 
     /**

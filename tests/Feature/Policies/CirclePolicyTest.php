@@ -227,6 +227,30 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($user->can('create', Circle::class));
     }
 
+    public function test_members_can_start_another_circle_once_staff_have_decided_on_their_last_one(): void
+    {
+        $this->freezeSecond();
+        $approved = Circle::factory()->create()->approval->user;
+        $rejected = Circle::factory()->rejected()->create()->approval->user;
+
+        $this->travel(5)->minutes();
+
+        $this->assertTrue($approved->can('create', Circle::class));
+        $this->assertTrue($rejected->can('create', Circle::class));
+    }
+
+    public function test_members_cannot_start_another_circle_while_one_is_waiting_for_approval_and_are_told_why(): void
+    {
+        $this->freezeSecond();
+        $member = Circle::factory()->pending()->create()->approval->user;
+
+        $this->travel(5)->minutes();
+
+        $permission = Gate::forUser($member)->inspect('create', Circle::class);
+        $this->assertTrue($permission->denied());
+        $this->assertSame('You already have a circle waiting for approval. You can start another once the team has decided on it.', $permission->message());
+    }
+
     public function test_members_cannot_create_circles_in_their_first_five_minutes_and_are_told_why(): void
     {
         $this->freezeSecond();
@@ -268,6 +292,14 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($staff->can('create', Circle::class));
     }
 
+    public function test_staff_can_start_circles_even_with_one_waiting_for_approval(): void
+    {
+        $staff = Circle::factory()->pending()->create()->approval->user;
+        $staff->forceFill(['role' => Role::Admin])->save();
+
+        $this->assertTrue($staff->can('create', Circle::class));
+    }
+
     #[DataProvider('managerRoles')]
     public function test_only_owners_and_admins_can_update_their_circle(CircleRole $role, bool $isManager): void
     {
@@ -283,6 +315,39 @@ class CirclePolicyTest extends TestCase
         $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
 
         $this->assertFalse($outsider->can('update', $circle));
+    }
+
+    public function test_the_owner_can_edit_their_rejected_circle_to_send_it_back_when_nothing_else_of_theirs_is_waiting(): void
+    {
+        $circle = Circle::factory()->rejected()->create();
+
+        $this->assertTrue($this->ownerWhoStarted($circle)->can('update', $circle));
+    }
+
+    public function test_the_owner_can_edit_their_approved_circle_while_another_of_theirs_is_waiting(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->ownerWhoStarted($circle);
+        $this->anotherCircleWaitingFor($owner);
+
+        $this->assertTrue($owner->can('update', $circle));
+    }
+
+    public function test_the_owner_cannot_edit_their_rejected_circle_while_another_of_theirs_is_waiting(): void
+    {
+        $circle = Circle::factory()->rejected()->create();
+        $owner = $this->ownerWhoStarted($circle);
+        $this->anotherCircleWaitingFor($owner);
+
+        $this->assertFalse($owner->can('update', $circle));
+    }
+
+    public function test_staff_can_edit_a_rejected_circle_even_while_another_of_its_starters_is_waiting(): void
+    {
+        $circle = Circle::factory()->rejected()->create();
+        $this->anotherCircleWaitingFor($this->ownerWhoStarted($circle));
+
+        $this->assertTrue(User::factory()->create(['role' => Role::Admin])->can('update', $circle));
     }
 
     #[DataProvider('staffRoles')]
@@ -369,6 +434,25 @@ class CirclePolicyTest extends TestCase
     /**
      * A new user who belongs to the circle with the given role.
      */
+    /**
+     * The person who started the circle (its approval is for them), as its owner.
+     */
+    private function ownerWhoStarted(Circle $circle): User
+    {
+        $owner = $circle->approval->user;
+        $circle->members()->attach($owner, ['role' => CircleRole::Owner]);
+
+        return $owner;
+    }
+
+    /**
+     * Another new circle of theirs, still waiting for approval.
+     */
+    private function anotherCircleWaitingFor(User $user): void
+    {
+        Approval::open(ApprovalType::NewCircle, Circle::factory()->withoutApproval()->create(), $user, $user);
+    }
+
     private function memberOf(Circle $circle, CircleRole $role): User
     {
         $user = User::factory()->create();

@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Models;
 
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Enums\Role;
+use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\CircleUser;
 use App\Models\User;
@@ -139,6 +141,44 @@ class UserTest extends TestCase
         $membership = $user->circles->first()->pivot;
 
         $this->assertSame(CircleUser::query()->where('user_id', $user->id)->value('id'), $membership->id);
+    }
+
+    public function test_has_a_circle_waiting_for_approval_while_a_new_one_of_theirs_waits(): void
+    {
+        $member = User::factory()->create();
+        Approval::open(ApprovalType::NewCircle, Circle::factory()->withoutApproval()->create(), $member, $member);
+
+        $this->assertTrue($member->hasCircleWaitingForApproval());
+    }
+
+    public function test_has_no_circle_waiting_once_staff_have_approved_theirs(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($circle->approval->user->hasCircleWaitingForApproval());
+    }
+
+    public function test_has_no_circle_waiting_once_staff_have_rejected_theirs(): void
+    {
+        $circle = Circle::factory()->rejected()->create();
+
+        $this->assertFalse($circle->approval->user->hasCircleWaitingForApproval());
+    }
+
+    public function test_a_waiting_request_to_join_or_invite_is_not_a_circle_waiting_for_approval(): void
+    {
+        $member = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, Circle::factory()->create(), $member, $member);
+        Approval::open(ApprovalType::Invite, Circle::factory()->create(), $member, User::factory()->create());
+
+        $this->assertFalse($member->hasCircleWaitingForApproval());
+    }
+
+    public function test_someone_elses_circle_waiting_is_not_theirs(): void
+    {
+        Circle::factory()->pending()->create();
+
+        $this->assertFalse(User::factory()->create()->hasCircleWaitingForApproval());
     }
 
     public function test_staff_are_the_admins_and_super_admins(): void

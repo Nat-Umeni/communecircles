@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ApprovalType;
 use App\Enums\Role;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
@@ -101,6 +102,14 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function staff(Builder $query): void
     {
         $query->whereIn('role', array_filter(Role::cases(), fn (Role $role): bool => $role->internal()));
+    }
+
+    /**
+     * Whether a new circle of theirs is still waiting for staff to approve it.
+     */
+    public function hasCircleWaitingForApproval(): bool
+    {
+        return Approval::query()->pending()->where('type', ApprovalType::NewCircle)->where('user_id', $this->id)->exists();
     }
 
     public function circles(): BelongsToMany
