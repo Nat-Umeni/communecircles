@@ -35,6 +35,7 @@ describe('Button', () => {
         ['accent', 'bg-accent'],
         ['surface', 'bg-surface'],
         ['ghost', 'text-heading'],
+        ['danger', 'bg-danger'],
     ] as const)('uses the %s style', (variant, styleClass) => {
         const wrapper = mount(Button, { props: { variant }, slots: { default: 'Go' } });
 

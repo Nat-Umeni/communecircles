@@ -131,6 +131,16 @@ describe('CircleForm', () => {
         expect(wrapper.text()).toContain('Choose the country the place is in.');
     });
 
+    it('puts the actions it is given beside the button', () => {
+        const wrapper = mount(CircleForm, {
+            props: { method: 'put', url: '/circles.update/abc123', countries, circle: exchange, submitLabel: 'Save changes' },
+            slots: { actions: '<a href="/circles.show/abc123">Cancel</a>' },
+        });
+
+        const actions = wrapper.get('button[type="submit"]').element.parentElement!;
+        expect(actions.querySelector('a')?.textContent).toBe('Cancel');
+    });
+
     it("doesn't ask for the country while a town or village is chosen, since that says it", async () => {
         const wrapper = mountNew();
 

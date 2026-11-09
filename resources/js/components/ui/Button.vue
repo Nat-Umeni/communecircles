@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-type Variant = 'primary' | 'secondary' | 'accent' | 'surface' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'accent' | 'surface' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const props = withDefaults(
@@ -22,6 +22,8 @@ const variants: Record<Variant, string> = {
     accent: 'bg-accent text-accent-foreground hover:bg-accent/85',
     surface: 'border border-border bg-surface text-heading hover:bg-secondary',
     ghost: 'text-heading hover:bg-secondary',
+    // For actions that can't be undone, like deleting.
+    danger: 'bg-danger text-danger-foreground hover:bg-danger/90',
 };
 
 const sizes: Record<Size, string> = {

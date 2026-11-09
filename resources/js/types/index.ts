@@ -78,6 +78,73 @@ export interface CircleOfMine extends CircleSummary {
 }
 
 /**
+ * What the viewer may do with a circle, from CirclePolicy (CircleController::show).
+ */
+export interface CirclePermissions {
+    view_channels: boolean;
+    request_to_join: boolean;
+    invite: boolean;
+    update: boolean;
+    delete: boolean;
+}
+
+/**
+ * Where a circle's own approval stands, sent while it isn't approved; can_decide is for staff.
+ */
+export interface CircleApproval {
+    id: number;
+    status: ApprovalStatus['value'];
+    label: string;
+    reason: string | null;
+    can_decide: boolean;
+}
+
+/**
+ * The viewer's own request to join a circle.
+ */
+export interface JoinRequest {
+    status: ApprovalStatus['value'];
+    label: string;
+    reason: string | null;
+}
+
+/**
+ * An invite to a circle waiting for the viewer's answer.
+ */
+export interface Invite {
+    id: number;
+    invited_by: string | null;
+}
+
+/**
+ * Someone's request to join, waiting for the circle's owners and admins.
+ */
+export interface WaitingJoinRequest {
+    id: number;
+    name: string;
+    requested_at: string;
+}
+
+/**
+ * Someone invited to a circle, who hasn't answered yet.
+ */
+export interface WaitingInvite {
+    id: number;
+    name: string;
+    invited_at: string;
+}
+
+/**
+ * A new circle in the staff approvals queue (ApprovalController::index). requester is null if their account is gone.
+ */
+export interface NewCircleApproval {
+    id: number;
+    requested_at: string;
+    circle: Pick<CircleDetails, 'public_id' | 'name' | 'description'>;
+    requester: { first_name: string; last_name: string } | null;
+}
+
+/**
  * A page of a Laravel paginator, as Inertia receives it.
  */
 export interface Paginated<T> {

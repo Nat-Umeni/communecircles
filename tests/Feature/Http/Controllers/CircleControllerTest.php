@@ -189,7 +189,7 @@ class CircleControllerTest extends TestCase
                 'members_count' => 1,
                 'location' => null,
             ])
-            ->where('can', ['view_channels' => false, 'request_to_join' => false, 'update' => false, 'delete' => false]));
+            ->where('can', ['view_channels' => false, 'request_to_join' => false, 'invite' => false, 'update' => false, 'delete' => false]));
     }
 
     public function test_shows_where_the_circle_is(): void
@@ -209,7 +209,7 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($owner)->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('can', ['view_channels' => true, 'request_to_join' => false, 'update' => true, 'delete' => false]));
+            ->where('can', ['view_channels' => true, 'request_to_join' => false, 'invite' => true, 'update' => true, 'delete' => false]));
     }
 
     public function test_tells_someone_outside_the_circle_they_can_ask_to_join(): void
@@ -219,7 +219,7 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create())->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('can', ['view_channels' => false, 'request_to_join' => true, 'update' => false, 'delete' => false]));
+            ->where('can', ['view_channels' => false, 'request_to_join' => true, 'invite' => false, 'update' => false, 'delete' => false]));
     }
 
     public function test_tells_staff_they_can_also_delete_the_circle(): void

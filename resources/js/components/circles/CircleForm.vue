@@ -69,6 +69,10 @@ function submit(): void {
             </FormField>
         </fieldset>
 
-        <Button type="submit" size="lg" class="mt-2 self-start" :disabled="form.processing">{{ submitLabel }}</Button>
+        <div class="mt-2 flex flex-wrap items-center gap-3">
+            <Button type="submit" size="lg" :disabled="form.processing">{{ submitLabel }}</Button>
+            <!-- Other ways out of the form, e.g. Cancel. -->
+            <slot name="actions" />
+        </div>
     </form>
 </template>

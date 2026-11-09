@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Index from '@/pages/circles/Index.vue';
-import type { CircleSummary, Paginated } from '@/types';
-import { groupButtons, links, locales, signIn } from '@tests/support';
+import type { CircleOfMine, CircleSummary, Paginated } from '@/types';
+import { fakeRouter, groupButtons, links, locales, signIn } from '@tests/support';
 
 function circlesPage(data: CircleSummary[]): Paginated<CircleSummary> {
     return { data, current_page: 1, last_page: 1, total: data.length, prev_page_url: null, next_page_url: null };
@@ -13,8 +13,28 @@ const circles = circlesPage([
     { public_id: 'bbbbbbbbbb', name: 'Exchange', description: 'Share skills and lend tools.', members_count: 1, location: null },
 ]);
 
-function index(page: Paginated<CircleSummary> = circles) {
-    return mount(Index, { props: { circles: page, filters: { search: '' }, locale: 'en', locales } });
+const mine: CircleOfMine = {
+    public_id: 'cccccccccc',
+    name: 'Seed Exchange',
+    description: 'Swapping seeds that grow well here.',
+    members_count: 1,
+    location: null,
+    status: { value: 'pending', label: 'Waiting for approval' },
+};
+
+/**
+ * The list as CircleController::index sends it: to a guest unless your_circles is given.
+ */
+function index(props: { circles?: Paginated<CircleSummary>; filters?: { search: string }; your_circles?: CircleOfMine[] | null } = {}) {
+    return mount(Index, { props: { circles, filters: { search: '' }, your_circles: null, locale: 'en', locales, ...props } });
+}
+
+function circleNames(wrapper: ReturnType<typeof index>): string[] {
+    return wrapper.findAll('main h3 a').map((link) => link.text());
+}
+
+function shown(wrapper: ReturnType<typeof index>): string | undefined {
+    return groupButtons(wrapper, 'Circles to show').find((tab) => tab.attributes('aria-pressed') === 'true')?.text();
 }
 
 describe('circles/Index', () => {
@@ -28,10 +48,102 @@ describe('circles/Index', () => {
     });
 
     it('says so when there are no circles yet', () => {
-        const wrapper = index(circlesPage([]));
+        const wrapper = index({ circles: circlesPage([]) });
 
         expect(wrapper.text()).toContain('No circles yet');
         expect(wrapper.find('main h3 a').exists()).toBe(false);
+    });
+
+    it('starts members on their own circles, with their approval status', () => {
+        signIn();
+        const wrapper = index({ your_circles: [mine] });
+
+        expect(groupButtons(wrapper, 'Circles to show').map((tab) => tab.text())).toEqual(['Your circles', 'Popular']);
+        expect(shown(wrapper)).toBe('Your circles');
+        expect(circleNames(wrapper)).toEqual(['Seed Exchange']);
+        expect(wrapper.get('[data-status]').text()).toBe('Waiting for approval');
+    });
+
+    it('switches members to the popular circles', async () => {
+        signIn();
+        const wrapper = index({ your_circles: [mine] });
+
+        await groupButtons(wrapper, 'Circles to show')[1].trigger('click');
+
+        expect(circleNames(wrapper)).toEqual(['Allotment', 'Exchange']);
+    });
+
+    it('says so when the member is in no circles yet', async () => {
+        signIn();
+        const wrapper = index({ your_circles: [] });
+
+        await groupButtons(wrapper, 'Circles to show')[0].trigger('click');
+
+        expect(wrapper.text()).toContain("You're not in any circles yet");
+        expect(circleNames(wrapper)).toEqual([]);
+    });
+
+    it('searches the popular circles by name', async () => {
+        const wrapper = index();
+
+        await wrapper.get('form[role="search"] input[name="search"]').setValue('seed');
+        await wrapper.get('form[role="search"]').trigger('submit');
+
+        expect(fakeRouter.get).toHaveBeenCalledWith('/circles.index', { search: 'seed' }, { preserveState: true, preserveScroll: true });
+    });
+
+    it('keeps the current search in the box', () => {
+        const wrapper = index({ filters: { search: 'seed' } });
+
+        expect(wrapper.get<HTMLInputElement>('input[name="search"]').element.value).toBe('seed');
+    });
+
+    it('says so when no circle matches the search', () => {
+        const wrapper = index({ circles: circlesPage([]), filters: { search: 'zz' } });
+
+        expect(wrapper.text()).toContain('No circles match “zz”');
+        expect(wrapper.text()).not.toContain('No circles yet');
+    });
+
+    it('pages through the popular circles', () => {
+        const wrapper = index({ circles: { ...circles, last_page: 2, total: 30, next_page_url: '/circles?page=2' } });
+
+        expect(wrapper.get('nav[aria-label="Pages"]').find('a').attributes('href')).toBe('/circles?page=2');
+    });
+
+    it("doesn't show guests the tabs, since they have no circles of their own", () => {
+        const wrapper = index();
+
+        expect(wrapper.find('[role="group"][aria-label="Circles to show"]').exists()).toBe(false);
+        expect(circleNames(wrapper)).toEqual(['Allotment', 'Exchange']);
+    });
+
+    it("doesn't start members in no circles on their empty list", () => {
+        signIn();
+
+        expect(shown(index({ your_circles: [] }))).toBe('Popular');
+    });
+
+    it("doesn't move a member who is searching or paging off Popular", () => {
+        signIn();
+
+        expect(shown(index({ your_circles: [mine], filters: { search: 'seed' } }))).toBe('Popular');
+        expect(shown(index({ your_circles: [mine], circles: { ...circles, current_page: 2, last_page: 2 } }))).toBe('Popular');
+    });
+
+    it("doesn't offer the search on the member's own circles, which it doesn't cover", () => {
+        signIn();
+
+        expect(index({ your_circles: [mine] }).find('form[role="search"]').exists()).toBe(false);
+    });
+
+    it("doesn't send an empty search", async () => {
+        const wrapper = index({ filters: { search: 'seed' } });
+
+        await wrapper.get('input[name="search"]').setValue('  ');
+        await wrapper.get('form[role="search"]').trigger('submit');
+
+        expect(fakeRouter.get).toHaveBeenCalledWith('/circles.index', {}, { preserveState: true, preserveScroll: true });
     });
 
     it('invites guests to log in or join', () => {

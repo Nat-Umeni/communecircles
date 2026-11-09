@@ -90,6 +90,10 @@ describe('Styleguide', () => {
         expect(pages.text()).toContain('Page 2 of 3');
     });
 
+    it('demos relative times', () => {
+        expect(styleguide().get('time').text()).toBe('3 days ago');
+    });
+
     it('demos a dialog that opens from a button and closes again', async () => {
         const wrapper = mount(Styleguide, { props, attachTo: document.body });
         const dialog = () => wrapper.get<HTMLDialogElement>('dialog').element;

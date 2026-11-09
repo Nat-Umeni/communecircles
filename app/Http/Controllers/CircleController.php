@@ -128,6 +128,7 @@ class CircleController extends Controller
             'can' => [
                 'view_channels' => Gate::allows('viewChannels', $circle),
                 'request_to_join' => Gate::allows('requestToJoin', $circle),
+                'invite' => Gate::allows('invite', $circle),
                 'update' => Gate::allows('update', $circle),
                 'delete' => Gate::allows('delete', $circle),
             ],

@@ -15,6 +15,7 @@ import Pagination from '@/components/ui/Pagination.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
+import TimeAgo from '@/components/ui/TimeAgo.vue';
 import Checkbox from '@/components/ui/form/Checkbox.vue';
 import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
@@ -73,6 +74,8 @@ const countries = [
 
 // A middle page, so both directions show.
 const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_page_url: '#', next_page_url: '#' };
+
+const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 </script>
 
 <template>
@@ -152,7 +155,7 @@ const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_
         <Card title="Buttons">
             <div class="flex flex-col gap-4">
                 <div v-for="size in ['sm', 'md', 'lg']" :key="size" class="flex flex-wrap items-center gap-3">
-                    <Button v-for="variant in ['primary', 'secondary', 'accent', 'surface', 'ghost']" :key="variant" :variant="variant" :size="size">
+                    <Button v-for="variant in ['primary', 'secondary', 'accent', 'surface', 'ghost', 'danger']" :key="variant" :variant="variant" :size="size">
                         {{ variant }} {{ size }}
                     </Button>
                 </div>
@@ -191,6 +194,10 @@ const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_
 
         <Card title="Paging" description="Pagination takes a Laravel paginator's page and links to the pages either side.">
             <Pagination :paginator="examplePages" />
+        </Card>
+
+        <Card title="Times" description="TimeAgo says how long ago a moment was, from the ISO date and time Laravel sends.">
+            <p><TimeAgo :datetime="threeDaysAgo" /></p>
         </Card>
 
         <Card title="Dialogs" description="Dialog opens on top of the page with v-model:open; Escape or its close button closes it.">
