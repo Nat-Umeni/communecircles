@@ -22,11 +22,16 @@ class CirclePolicy
     }
 
     /**
-     * Determine whether the user can see the circle's public page (name, description, join button). Guests can too.
+     * Determine whether the user can see the circle's page. An approved circle's is public, guests included; until
+     * it's approved, only its members and staff can see it, and anyone else gets "not found", as if it didn't exist.
      */
-    public function view(?User $user, Circle $circle): bool
+    public function view(?User $user, Circle $circle): Response
     {
-        return true;
+        if ($circle->isApproved() || ($user !== null && ($user->role->internal() || $circle->membershipOf($user) !== null))) {
+            return Response::allow();
+        }
+
+        return Response::denyAsNotFound();
     }
 
     /**
@@ -42,7 +47,7 @@ class CirclePolicy
      */
     public function requestToJoin(User $user, Circle $circle): bool
     {
-        return $user->hasVerifiedEmail() && $circle->membershipOf($user) === null;
+        return $circle->isApproved() && $user->hasVerifiedEmail() && $circle->membershipOf($user) === null;
     }
 
     /**

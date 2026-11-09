@@ -39,6 +39,16 @@ class CountriesTest extends TestCase
         $this->assertSame($sorted, $names);
     }
 
+    public function test_lists_the_countries_as_options_for_a_form_in_name_order(): void
+    {
+        $options = Countries::options();
+
+        $this->assertCount(250, $options);
+        $this->assertSame(['value' => 'AF', 'label' => 'Afghanistan'], $options[0]);
+        $this->assertContains(['value' => 'GB', 'label' => 'United Kingdom'], $options);
+        $this->assertSame(array_values(Countries::all()), array_column($options, 'label'));
+    }
+
     #[DataProvider('notCountries')]
     public function test_leaves_out_codes_that_are_not_countries(string $code): void
     {

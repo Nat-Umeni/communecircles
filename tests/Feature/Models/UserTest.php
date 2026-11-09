@@ -129,6 +129,15 @@ class UserTest extends TestCase
         $this->assertSame(CircleRole::Admin, $user->circles->first()->pivot->role);
     }
 
+    public function test_staff_are_the_admins_and_super_admins(): void
+    {
+        $admin = User::factory()->create(['role' => Role::Admin]);
+        $superAdmin = User::factory()->create(['role' => Role::SuperAdmin]);
+        User::factory()->create(['role' => Role::User]);
+
+        $this->assertEqualsCanonicalizing([$admin->id, $superAdmin->id], User::query()->staff()->pluck('id')->all());
+    }
+
     public function test_logs_a_new_member_joining_without_their_password(): void
     {
         $user = User::factory()->create(['first_name' => 'Ada', 'email' => 'ada@example.com']);

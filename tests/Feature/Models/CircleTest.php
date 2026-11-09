@@ -4,10 +4,13 @@ namespace Tests\Feature\Models;
 
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
+use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CircleTest extends TestCase
@@ -75,6 +78,83 @@ class CircleTest extends TestCase
         $circle->members()->attach(User::factory()->create(), ['role' => CircleRole::Owner]);
 
         $this->assertNull($circle->membershipOf(User::factory()->create()));
+    }
+
+    public function test_is_approved_only_once_staff_have_approved_it(): void
+    {
+        $this->assertTrue(Circle::factory()->create()->isApproved());
+        $this->assertFalse(Circle::factory()->pending()->create()->isApproved());
+        $this->assertFalse(Circle::factory()->rejected()->create()->isApproved());
+        $this->assertFalse(Circle::factory()->withoutApproval()->create()->isApproved());
+    }
+
+    public function test_its_approval_is_the_new_circle_one_not_a_join_request_or_invite(): void
+    {
+        $circle = Circle::factory()->withoutApproval()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+        Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $asker);
+        Approval::open(ApprovalType::NewCircle, $circle, $asker, $asker);
+
+        $this->assertSame(ApprovalType::NewCircle, $circle->approval->type);
+        $this->assertSame(3, $circle->approvals()->count());
+    }
+
+    /**
+     * @param  'JoinRequest'|'Invite'  $type
+     */
+    #[DataProvider('approvalsThatAddSomeone')]
+    public function test_approving_a_join_request_or_invite_adds_the_person_as_a_member(string $type): void
+    {
+        $circle = Circle::factory()->create();
+        $person = User::factory()->create();
+        $approval = Approval::open(constant(ApprovalType::class.'::'.$type), $circle, $person, User::factory()->create());
+
+        $circle->whenApproved($approval);
+
+        $this->assertSame(CircleRole::Member, $circle->membershipOf($person)?->role);
+    }
+
+    public function test_approving_a_new_circle_adds_no_one(): void
+    {
+        $circle = Circle::factory()->pending()->create();
+
+        $circle->whenApproved($circle->approval);
+
+        $this->assertSame(0, $circle->members()->count());
+    }
+
+    public function test_approving_someone_already_in_the_circle_keeps_their_role(): void
+    {
+        $circle = Circle::factory()->create();
+        $admin = User::factory()->create();
+        $circle->members()->attach($admin, ['role' => CircleRole::Admin]);
+        $approval = Approval::open(ApprovalType::JoinRequest, $circle, $admin, $admin);
+
+        $circle->whenApproved($approval);
+
+        $this->assertSame(CircleRole::Admin, $circle->membershipOf($admin)->role);
+        $this->assertSame(1, $circle->members()->count());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function approvalsThatAddSomeone(): array
+    {
+        return [
+            'a request to join' => ['JoinRequest'],
+            'an invite' => ['Invite'],
+        ];
+    }
+
+    public function test_approved_finds_only_approved_circles(): void
+    {
+        $approved = Circle::factory()->create();
+        Circle::factory()->pending()->create();
+        Circle::factory()->rejected()->create();
+
+        $this->assertSame([$approved->id], Circle::query()->approved()->pluck('id')->all());
     }
 
     public function test_has_no_location_until_it_is_given_one(): void

@@ -32,6 +32,44 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($outsider->can('view', $circle));
     }
 
+    #[DataProvider('unapproved')]
+    public function test_a_circle_that_is_not_approved_is_hidden_from_guests_as_if_it_did_not_exist(string $state): void
+    {
+        $circle = Circle::factory()->{$state}()->create();
+
+        $this->assertSame(404, Gate::inspect('view', $circle)->status());
+    }
+
+    #[DataProvider('unapproved')]
+    public function test_a_circle_that_is_not_approved_is_hidden_from_members_of_other_circles(string $state): void
+    {
+        $circle = Circle::factory()->{$state}()->create();
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertSame(404, Gate::forUser($outsider)->inspect('view', $circle)->status());
+    }
+
+    #[DataProvider('unapproved')]
+    public function test_its_own_members_can_see_a_circle_before_it_is_approved(string $state): void
+    {
+        $circle = Circle::factory()->{$state}()->create();
+
+        $this->assertTrue($this->memberOf($circle, CircleRole::Owner)->can('view', $circle));
+    }
+
+    #[DataProvider('unapproved')]
+    public function test_staff_can_see_a_circle_before_it_is_approved(string $state): void
+    {
+        $staff = User::factory()->create(['role' => Role::Admin]);
+
+        $this->assertTrue($staff->can('view', Circle::factory()->{$state}()->create()));
+    }
+
+    public function test_nobody_can_ask_to_join_a_circle_that_is_not_approved(): void
+    {
+        $this->assertFalse(User::factory()->create()->can('requestToJoin', Circle::factory()->pending()->create()));
+    }
+
     #[DataProvider('circleRoles')]
     public function test_every_member_can_view_their_circles_channels(CircleRole $role): void
     {
@@ -180,6 +218,17 @@ class CirclePolicyTest extends TestCase
         $circle = Circle::factory()->create();
 
         $this->assertFalse($this->memberOf($circle, CircleRole::Owner)->can('delete', $circle));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unapproved(): array
+    {
+        return [
+            'waiting for approval' => ['pending'],
+            'rejected' => ['rejected'],
+        ];
     }
 
     /**

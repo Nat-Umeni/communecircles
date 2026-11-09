@@ -4,19 +4,71 @@ namespace App\Models;
 
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
+use App\Enums\ApprovalStatus;
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Models\Concerns\HasPublicId;
+use App\Models\Contracts\Approvable;
 use Database\Factories\CircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 #[Fillable(['name', 'description'])]
-class Circle extends Model
+class Circle extends Model implements Approvable
 {
     /** @use HasFactory<CircleFactory> */
     use HasFactory, HasPublicId;
+
+    /**
+     * @return MorphMany<Approval, $this>
+     */
+    public function approvals(): MorphMany
+    {
+        return $this->morphMany(Approval::class, 'approvable');
+    }
+
+    /**
+     * Its approval as a new circle: staff approve new circles before they're listed.
+     *
+     * @return MorphOne<Approval, $this>
+     */
+    public function approval(): MorphOne
+    {
+        return $this->morphOne(Approval::class, 'approvable')->where('type', ApprovalType::NewCircle);
+    }
+
+    /**
+     * An approved request to join or invite adds the person as a member, unless they're already in the circle.
+     */
+    public function whenApproved(Approval $approval): void
+    {
+        if ($approval->type->addsMember() && $this->membershipOf($approval->user) === null) {
+            $this->members()->attach($approval->user, ['role' => CircleRole::Member]);
+        }
+    }
+
+    /**
+     * Whether staff have approved it; until then only its members and staff can see it.
+     */
+    public function isApproved(): bool
+    {
+        return $this->approval?->status === ApprovalStatus::Approved;
+    }
+
+    /**
+     * Only circles staff have approved.
+     */
+    #[Scope]
+    protected function approved(Builder $query): void
+    {
+        $query->whereRelation('approval', 'status', ApprovalStatus::Approved);
+    }
 
     public function owners(): BelongsToMany
     {

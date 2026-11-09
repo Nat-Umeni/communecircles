@@ -39,6 +39,22 @@ final class Countries
     }
 
     /**
+     * Every country as an option for a form's country list, in name order, e.g. [['value' => 'AF', 'label' => 'Afghanistan'], …].
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    public static function options(): array
+    {
+        $options = [];
+
+        foreach (self::all() as $code => $name) {
+            $options[] = ['value' => $code, 'label' => $name];
+        }
+
+        return $options;
+    }
+
+    /**
      * The country's English name, or null when the code isn't a country.
      */
     public static function name(string $code): ?string

@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Http\Requests\Circle\DeleteCircleRequest;
 use App\Http\Requests\Circle\StoreCircleRequest;
 use App\Http\Requests\Circle\UpdateCircleRequest;
+use App\Models\Approval;
 use App\Models\Circle;
+use App\Models\User;
+use App\Notifications\Circle\NewCircleAwaitingApproval;
 use App\Services\Countries;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,7 +26,7 @@ class CircleController extends Controller
     private const int CIRCLES_PER_PAGE = 24;
 
     /**
-     * List the circles in name order, a page at a time, optionally only those whose name contains the search.
+     * List the approved circles in name order, a page at a time, optionally only those whose name contains the search.
      */
     public function index(Request $request): Response
     {
@@ -29,6 +34,7 @@ class CircleController extends Controller
 
         return Inertia::render('circles/Index', [
             'circles' => Circle::query()
+                ->approved()
                 ->withCount('members')
                 ->when($search !== '', fn (Builder $query) => $query->whereLike('name', "%{$search}%"))
                 ->orderBy('name')
@@ -48,23 +54,37 @@ class CircleController extends Controller
 
         return Inertia::render('circles/Create', [
             'cannot_create_reason' => $permission->denied() ? $permission->message() : null,
-            'countries' => $this->countries(),
+            'countries' => Countries::options(),
         ]);
     }
 
     /**
-     * Create the circle with its creator as owner, then open it.
+     * Create the circle with its creator as owner, then open it. A member's circle waits for staff approval, and
+     * every staff member is emailed about it; a circle staff create is approved by them straight away.
      */
     public function store(StoreCircleRequest $request): RedirectResponse
     {
-        $circle = DB::transaction(function () use ($request): Circle {
+        $creator = $request->user();
+        $createdByStaff = $creator->role->internal();
+
+        $circle = DB::transaction(function () use ($request, $creator, $createdByStaff): Circle {
             $circle = new Circle($request->safe()->only(['name', 'description']));
             $circle->locate($request->location());
             $circle->save();
-            $circle->members()->attach($request->user(), ['role' => CircleRole::Owner]);
+            $circle->members()->attach($creator, ['role' => CircleRole::Owner]);
+
+            $approval = Approval::open(ApprovalType::NewCircle, $circle, $creator, $creator);
+
+            if ($createdByStaff) {
+                $approval->approve($creator);
+            }
 
             return $circle;
         });
+
+        if (! $createdByStaff) {
+            Notification::send(User::query()->staff()->get(), new NewCircleAwaitingApproval($circle, $creator));
+        }
 
         return to_route('circles.show', $circle);
     }
@@ -74,6 +94,8 @@ class CircleController extends Controller
      */
     public function show(Circle $circle): Response
     {
+        Gate::authorize('view', $circle);
+
         return Inertia::render('circles/Show', [
             'circle' => [...$this->details($circle), 'members_count' => $circle->loadCount('members')->members_count],
             'can' => [
@@ -94,7 +116,7 @@ class CircleController extends Controller
 
         return Inertia::render('circles/Edit', [
             'circle' => $this->details($circle),
-            'countries' => $this->countries(),
+            'countries' => Countries::options(),
         ]);
     }
 
@@ -131,18 +153,5 @@ class CircleController extends Controller
             ...$circle->only('public_id', 'name', 'description'),
             'location' => $circle->location()?->toArray(),
         ];
-    }
-
-    /**
-     * The countries for the form's country list, for a place GeoNames doesn't know.
-     *
-     * @return list<array{value: string, label: string}>
-     */
-    private function countries(): array
-    {
-        return collect(Countries::all())
-            ->map(fn (string $name, string $code): array => ['value' => $code, 'label' => $name])
-            ->values()
-            ->all();
     }
 }

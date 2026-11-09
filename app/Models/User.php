@@ -9,6 +9,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -90,6 +92,15 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'role' => Role::class,
         ];
+    }
+
+    /**
+     * Staff accounts: admins and super admins (Role::internal()).
+     */
+    #[Scope]
+    protected function staff(Builder $query): void
+    {
+        $query->whereIn('role', array_filter(Role::cases(), fn (Role $role): bool => $role->internal()));
     }
 
     public function circles(): BelongsToMany
