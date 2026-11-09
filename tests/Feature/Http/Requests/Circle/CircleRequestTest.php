@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Http\Requests\Circle\Concerns;
+namespace Tests\Feature\Http\Requests\Circle;
 
 use App\DTO\GeoNames\Place;
 use App\Enums\CircleRole;
@@ -15,10 +15,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * NOTE: a trait needs a request to live on, so these run through creating a circle (StoreCircleRequest)
+ * NOTE: CircleRequest is abstract, so these run through creating a circle (StoreCircleRequest)
  * and, for what only happens when editing, updating one (UpdateCircleRequest).
  */
-class ChoosesPlaceTest extends TestCase
+class CircleRequestTest extends TestCase
 {
     use LazilyRefreshDatabase;
 
@@ -127,6 +127,45 @@ class ChoosesPlaceTest extends TestCase
 
         $response->assertValid()->assertRedirect();
         Http::assertSent(fn (Request $request): bool => $request['geonameId'] === 2635610);
+    }
+
+    public function test_a_name_of_its_own_needs_a_country_when_no_place_is_chosen(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm']));
+
+        $response->assertInvalid(['country_code' => 'Choose the country the place is in.']);
+        $this->assertDatabaseEmpty('circles');
+    }
+
+    public function test_rejects_a_country_code_that_is_not_a_country(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'country_code' => 'ZZ']));
+
+        $response->assertInvalid(['country_code' => 'The selected country is invalid.']);
+    }
+
+    public function test_accepts_a_name_of_its_own_in_a_country_without_asking_geonames(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'country_code' => 'GB']));
+
+        $response->assertValid()->assertRedirect();
+        Http::assertNothingSent();
+    }
+
+    public function test_needs_no_country_for_a_name_of_its_own_near_a_chosen_place(): void
+    {
+        Http::fake(['geonames.test/getJSON*' => Http::response(self::TOTNES)]);
+
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'geonames_id' => 2635610]));
+
+        $response->assertValid()->assertRedirect();
+    }
+
+    public function test_rejects_a_name_of_its_own_over_255_characters(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => str_repeat('a', 256), 'country_code' => 'GB']));
+
+        $response->assertInvalid(['location_name' => 'The place name field must not be greater than 255 characters.']);
     }
 
     /**

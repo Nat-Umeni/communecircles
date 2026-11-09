@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\DTO\GeoNames\Place;
+use App\DTO\Location;
 use App\Enums\CircleRole;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\CircleFactory;
@@ -39,15 +40,16 @@ class Circle extends Model
     }
 
     /**
-     * Where the circle is: the town or village chosen from GeoNames, or null when none was chosen.
+     * Where the circle is: its own name for its place, the nearest GeoNames town or village, or both. Null when
+     * it hasn't said.
      */
-    public function place(): ?Place
+    public function location(): ?Location
     {
-        if ($this->geonames_id === null) {
+        if ($this->location_name === null && $this->geonames_id === null) {
             return null;
         }
 
-        return new Place(
+        $place = $this->geonames_id === null ? null : new Place(
             geonamesId: $this->geonames_id,
             name: $this->place_name,
             region: $this->region,
@@ -56,21 +58,24 @@ class Circle extends Model
             latitude: $this->latitude,
             longitude: $this->longitude,
         );
+
+        return new Location($this->location_name, $place, $this->country_code, $this->country_name);
     }
 
     /**
-     * Set the circle's location to the place, or clear it with null. Save the circle afterwards.
+     * Set where the circle is, or clear it with null. Save the circle afterwards.
      */
-    public function moveTo(?Place $place): void
+    public function locate(?Location $location): void
     {
         $this->forceFill([
-            'geonames_id' => $place?->geonamesId,
-            'place_name' => $place?->name,
-            'region' => $place?->region,
-            'country_code' => $place?->countryCode,
-            'country_name' => $place?->countryName,
-            'latitude' => $place?->latitude,
-            'longitude' => $place?->longitude,
+            'location_name' => $location?->name,
+            'geonames_id' => $location?->place?->geonamesId,
+            'place_name' => $location?->place?->name,
+            'region' => $location?->place?->region,
+            'country_code' => $location?->countryCode,
+            'country_name' => $location?->countryName,
+            'latitude' => $location?->place?->latitude,
+            'longitude' => $location?->place?->longitude,
         ]);
     }
 

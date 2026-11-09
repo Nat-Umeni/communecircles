@@ -3,6 +3,7 @@
 namespace Tests\Feature\Models;
 
 use App\DTO\GeoNames\Place;
+use App\DTO\Location;
 use App\Enums\CircleRole;
 use App\Models\Circle;
 use App\Models\User;
@@ -76,22 +77,44 @@ class CircleTest extends TestCase
         $this->assertNull($circle->membershipOf(User::factory()->create()));
     }
 
-    public function test_has_no_place_until_it_is_moved_to_one(): void
+    public function test_has_no_location_until_it_is_given_one(): void
     {
         $circle = Circle::factory()->create();
 
-        $this->assertNull($circle->place());
+        $this->assertNull($circle->location());
     }
 
-    public function test_keeps_the_place_it_is_moved_to(): void
+    public function test_keeps_a_location_at_a_geonames_place(): void
     {
-        $totnes = new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843);
         $circle = Circle::factory()->create();
 
-        $circle->moveTo($totnes);
+        $circle->locate(Location::at($this->totnes()));
         $circle->save();
 
-        $this->assertEquals($totnes, $circle->fresh()->place());
+        $this->assertEquals(Location::at($this->totnes()), $circle->fresh()->location());
+    }
+
+    public function test_keeps_its_own_name_for_a_place_near_a_geonames_one(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $circle->locate(Location::at($this->totnes(), 'Fernhill Farm'));
+        $circle->save();
+
+        $this->assertEquals(Location::at($this->totnes(), 'Fernhill Farm'), $circle->fresh()->location());
+    }
+
+    public function test_keeps_a_location_that_is_just_a_name_in_a_country(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $circle->locate(Location::named('Fernhill Farm', 'GB'));
+        $circle->save();
+
+        $circle->refresh();
+        $this->assertEquals(Location::named('Fernhill Farm', 'GB'), $circle->location());
+        $this->assertNull($circle->geonames_id);
+        $this->assertNull($circle->latitude);
     }
 
     public function test_keeps_a_place_with_no_region(): void
@@ -99,33 +122,39 @@ class CircleTest extends TestCase
         $vaduz = new Place(3042030, 'Vaduz', null, 'LI', 'Liechtenstein', 47.14151, 9.52154);
         $circle = Circle::factory()->create();
 
-        $circle->moveTo($vaduz);
+        $circle->locate(Location::at($vaduz));
         $circle->save();
 
-        $this->assertEquals($vaduz, $circle->fresh()->place());
+        $this->assertEquals(Location::at($vaduz), $circle->fresh()->location());
     }
 
-    public function test_moving_to_no_place_clears_the_location(): void
+    public function test_clearing_the_location_empties_every_part_of_it(): void
     {
-        $circle = Circle::factory()->create();
-        $circle->moveTo(new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843));
-        $circle->save();
+        $circle = Circle::factory()->in($this->totnes(), 'Fernhill Farm')->create();
 
-        $circle->moveTo(null);
+        $circle->locate(null);
         $circle->save();
 
         $circle->refresh();
-        $this->assertNull($circle->place());
+        $this->assertNull($circle->location());
+        $this->assertNull($circle->location_name);
         $this->assertNull($circle->geonames_id);
+        $this->assertNull($circle->country_code);
         $this->assertNull($circle->latitude);
     }
 
     public function test_does_not_let_the_location_be_mass_assigned(): void
     {
-        $circle = new Circle(['name' => 'Exchange', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'latitude' => 50.43107]);
+        $circle = new Circle(['name' => 'Exchange', 'location_name' => 'Fernhill Farm', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'latitude' => 50.43107]);
 
+        $this->assertNull($circle->location_name);
         $this->assertNull($circle->geonames_id);
         $this->assertNull($circle->place_name);
         $this->assertNull($circle->latitude);
+    }
+
+    private function totnes(): Place
+    {
+        return new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843);
     }
 }

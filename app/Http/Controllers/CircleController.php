@@ -7,6 +7,7 @@ use App\Http\Requests\Circle\DeleteCircleRequest;
 use App\Http\Requests\Circle\StoreCircleRequest;
 use App\Http\Requests\Circle\UpdateCircleRequest;
 use App\Models\Circle;
+use App\Services\Countries;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,7 @@ class CircleController extends Controller
 
         return Inertia::render('circles/Create', [
             'cannot_create_reason' => $permission->denied() ? $permission->message() : null,
+            'countries' => $this->countries(),
         ]);
     }
 
@@ -57,7 +59,7 @@ class CircleController extends Controller
     {
         $circle = DB::transaction(function () use ($request): Circle {
             $circle = new Circle($request->safe()->only(['name', 'description']));
-            $circle->moveTo($request->place());
+            $circle->locate($request->location());
             $circle->save();
             $circle->members()->attach($request->user(), ['role' => CircleRole::Owner]);
 
@@ -92,20 +94,17 @@ class CircleController extends Controller
 
         return Inertia::render('circles/Edit', [
             'circle' => $this->details($circle),
+            'countries' => $this->countries(),
         ]);
     }
 
     /**
-     * Save the circle's new details, and its place if a different one was chosen, then open it.
+     * Save the circle's new details and location, then open it.
      */
     public function update(UpdateCircleRequest $request, Circle $circle): RedirectResponse
     {
         $circle->fill($request->safe()->only(['name', 'description']));
-
-        if ($request->placeChanged()) {
-            $circle->moveTo($request->place());
-        }
-
+        $circle->locate($request->location());
         $circle->save();
 
         return to_route('circles.show', $circle);
@@ -130,7 +129,20 @@ class CircleController extends Controller
     {
         return [
             ...$circle->only('public_id', 'name', 'description'),
-            'location' => $circle->place()?->toArray(),
+            'location' => $circle->location()?->toArray(),
         ];
+    }
+
+    /**
+     * The countries for the form's country list, for a place GeoNames doesn't know.
+     *
+     * @return list<array{value: string, label: string}>
+     */
+    private function countries(): array
+    {
+        return collect(Countries::all())
+            ->map(fn (string $name, string $code): array => ['value' => $code, 'label' => $name])
+            ->values()
+            ->all();
     }
 }
