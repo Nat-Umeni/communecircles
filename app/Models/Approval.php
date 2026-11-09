@@ -16,9 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * An approval of some type (App\Enums\ApprovalType) about an Approvable, e.g. a new circle, a request to join one,
- * or an invite into one, and about one person. Every request and decision is also written to the audit log,
- * against the thing itself.
+ * An approval of some type (App\Enums\ApprovalType) for the thing waiting for approval (an Approvable), about one
+ * person. Every request and decision is also written to the audit log, against the thing waiting for approval.
  */
 #[Fillable(['type', 'user_id', 'status', 'requested_by', 'decided_by', 'decided_at', 'reason'])]
 class Approval extends Model
@@ -27,7 +26,7 @@ class Approval extends Model
     use HasFactory;
 
     /**
-     * Ask for an approval about someone, e.g. open(ApprovalType::Invite, $circle, for: $invitee, by: $owner).
+     * Ask for an approval about someone, e.g. open(ApprovalType::Invite, $thing, for: $invitee, by: $inviter).
      * There's one per type, thing and person, so asking again, e.g. after a rejection, reopens it.
      */
     public static function open(ApprovalType $type, Approvable&Model $about, User $for, User $by): self
@@ -46,7 +45,8 @@ class Approval extends Model
     }
 
     /**
-     * Approve it, then let the approved thing act on it, e.g. a circle adding the person who asked to join.
+     * Approve it, then let the thing waiting for approval act on it (its whenApproved()), e.g. letting in the
+     * person who asked to join.
      */
     public function approve(User $by): void
     {
@@ -73,7 +73,7 @@ class Approval extends Model
     }
 
     /**
-     * Who it's about: the circle's creator, the person asking to join, or the person invited.
+     * Who it's about: whoever created the new thing, the person asking to join, or the person invited.
      *
      * @return BelongsTo<User, $this>
      */
@@ -120,7 +120,7 @@ class Approval extends Model
     }
 
     /**
-     * Write the event to the audit log against the thing approved, with the approval's type.
+     * Write the event to the audit log against the thing waiting for approval, with the approval's type.
      *
      * @param  array<string, mixed>  $properties
      */

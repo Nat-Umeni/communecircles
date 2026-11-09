@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ApprovalStatus;
 use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Http\Requests\Circle\DeleteCircleRequest;
@@ -90,7 +91,8 @@ class CircleController extends Controller
     }
 
     /**
-     * Show the circle's public page, with what the viewer can do there.
+     * Show the circle's page, with what the viewer can do there. Until staff approve the circle, the page also says
+     * where its approval stands, which only its members and staff can see.
      */
     public function show(Circle $circle): Response
     {
@@ -103,6 +105,13 @@ class CircleController extends Controller
                 'request_to_join' => Gate::allows('requestToJoin', $circle),
                 'update' => Gate::allows('update', $circle),
                 'delete' => Gate::allows('delete', $circle),
+            ],
+            'approval' => $circle->isApproved() ? null : [
+                'id' => $circle->approval->id,
+                'status' => $circle->approval->status->value,
+                'label' => $circle->approval->status->label(),
+                'reason' => $circle->approval->reason,
+                'can_decide' => Gate::allows('decide', $circle->approval),
             ],
         ]);
     }
@@ -121,13 +130,19 @@ class CircleController extends Controller
     }
 
     /**
-     * Save the circle's new details and location, then open it.
+     * Save the circle's new details and location, then open it. A circle staff turned down goes back to them for
+     * approval, and they're emailed again.
      */
     public function update(UpdateCircleRequest $request, Circle $circle): RedirectResponse
     {
         $circle->fill($request->safe()->only(['name', 'description']));
         $circle->locate($request->location());
         $circle->save();
+
+        if ($circle->approval->status === ApprovalStatus::Rejected) {
+            Approval::open(ApprovalType::NewCircle, $circle, $circle->approval->user, $request->user());
+            Notification::send(User::query()->staff()->get(), new NewCircleAwaitingApproval($circle, $request->user(), resubmitted: true));
+        }
 
         return to_route('circles.show', $circle);
     }

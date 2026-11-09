@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -36,6 +37,10 @@ Route::middleware('auth')->group(function () {
 
     // GeoNames' free account allows 1,000 requests an hour, so each member gets 30 place searches a minute.
     Route::get('/places', PlaceController::class)->name('places.search')->middleware('throttle:30,1');
+
+    Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+    Route::post('/approvals/{approval}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('/approvals/{approval}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');
 });
 
 // NOTE: open to guests and members alike, and registered after the group above so /circles/create

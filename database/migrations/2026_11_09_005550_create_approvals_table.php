@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Approvals for new circles, requests to join and invites (App\Enums\ApprovalType): one per kind, thing and
-        // person, reopened when someone asks again. Their history is in the audit log.
+        // Approvals of every type (App\Enums\ApprovalType), each for the thing waiting for approval and about one
+        // person: one per type, thing and person, reopened when someone asks again. Their history is in the audit log.
         Schema::create('approvals', function (Blueprint $table) {
             $table->id();
             $table->string('type')->index();
             $table->morphs('approvable');
-            // Who it's about: the circle's creator, the person asking to join, or the person invited. Always set,
+            // Who it's about: whoever created the new thing, the person asking to join, or the person invited. Always set,
             // since a unique index lets rows with an empty user_id repeat.
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('status')->index();

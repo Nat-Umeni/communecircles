@@ -6,7 +6,7 @@ use App\Models\Approval;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- * Something approvals are about, e.g. a circle: approved when new, and asked to join or invited into.
+ * Something that can be waiting for approval: when it's new, or when someone asks to join it or is invited into it.
  */
 interface Approvable
 {
@@ -18,7 +18,7 @@ interface Approvable
     public function approvals(): MorphMany;
 
     /**
-     * What happens once one of its approvals is approved, e.g. adding someone who asked to join.
+     * What happens once one of its approvals is approved, e.g. letting in the person who asked to join.
      */
     public function whenApproved(Approval $approval): void;
 }

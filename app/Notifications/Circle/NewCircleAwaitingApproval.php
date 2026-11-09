@@ -10,7 +10,8 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
- * Tells staff that a member has created a circle and it's waiting for their approval. Sent through the queue.
+ * Tells staff that a circle is waiting for their approval: newly created, or changed after they turned it down.
+ * Sent through the queue.
  */
 class NewCircleAwaitingApproval extends Notification implements ShouldQueue
 {
@@ -18,7 +19,10 @@ class NewCircleAwaitingApproval extends Notification implements ShouldQueue
 
     public function __construct(
         public readonly Circle $circle,
-        public readonly User $creator,
+        /** Whoever asked for approval: the creator, or whoever changed the circle after it was turned down. */
+        public readonly User $requester,
+        /** Whether it comes back after staff turned it down, rather than being new. */
+        public readonly bool $resubmitted = false,
     ) {}
 
     /**
@@ -31,11 +35,14 @@ class NewCircleAwaitingApproval extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        // TODO: link to the staff approvals page once it's built; staff can open a waiting circle's page meanwhile.
+        $name = "{$this->requester->first_name} {$this->requester->last_name}";
+
         return (new MailMessage)
-            ->subject('A new circle is waiting for approval')
-            ->line("{$this->creator->first_name} {$this->creator->last_name} has created the circle \"{$this->circle->name}\", and it needs a staff member to approve it before anyone else can see it.")
+            ->subject($this->resubmitted ? 'A circle is waiting for approval again' : 'A new circle is waiting for approval')
+            ->line($this->resubmitted
+                ? "{$name} has changed the circle \"{$this->circle->name}\" since it was turned down, and it needs a staff member to look at it again."
+                : "{$name} has created the circle \"{$this->circle->name}\", and it needs a staff member to approve it before anyone else can see it.")
             ->line($this->circle->description)
-            ->action('Review the circle', route('circles.show', $this->circle));
+            ->action('Review circles waiting for approval', route('approvals.index'));
     }
 }

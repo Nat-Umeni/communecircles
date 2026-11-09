@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Where something waiting for approval stands, e.g. a new circle or a request to join one.
+ * Where the thing waiting for approval stands.
  */
 enum ApprovalStatus: string
 {

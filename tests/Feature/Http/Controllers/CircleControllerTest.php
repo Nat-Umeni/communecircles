@@ -212,6 +212,49 @@ class CircleControllerTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_shows_the_creator_that_their_circle_is_waiting_for_approval(): void
+    {
+        $circle = Circle::factory()->pending()->create();
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval', [
+            'id' => $circle->approval->id,
+            'status' => 'pending',
+            'label' => 'Waiting for approval',
+            'reason' => null,
+            'can_decide' => false,
+        ]));
+    }
+
+    public function test_shows_the_creator_why_staff_turned_their_circle_down(): void
+    {
+        $circle = Circle::factory()->rejected('There is already a circle for tool sharing.')->create();
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('approval.status', 'rejected')
+            ->where('approval.label', 'Not approved')
+            ->where('approval.reason', 'There is already a circle for tool sharing.'));
+    }
+
+    public function test_lets_staff_decide_on_a_waiting_circle_from_its_page(): void
+    {
+        $circle = Circle::factory()->pending()->create();
+
+        $response = $this->actingAs(User::factory()->create(['role' => Role::Admin]))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval.can_decide', true));
+    }
+
+    public function test_an_approved_circle_has_no_approval_to_show(): void
+    {
+        $response = $this->get(route('circles.show', Circle::factory()->create()));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval', null));
+    }
+
     public function test_an_unknown_circle_is_not_found(): void
     {
         $response = $this->get(route('circles.show', 'abcdefghij'));
@@ -399,7 +442,7 @@ class CircleControllerTest extends TestCase
         $this->actingAs($creator)->post(route('circles.store'), ['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
 
         Notification::assertSentTo([$admin, $superAdmin], NewCircleAwaitingApproval::class, fn (NewCircleAwaitingApproval $notification): bool => $notification->circle->is(Circle::sole())
-            && $notification->creator->is($creator));
+            && $notification->requester->is($creator));
         Notification::assertNotSentTo($creator, NewCircleAwaitingApproval::class);
     }
 
@@ -475,6 +518,50 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->has('countries', 250)
             ->where('countries', fn ($countries): bool => $countries->contains(['value' => 'LI', 'label' => 'Liechtenstein'])));
+    }
+
+    public function test_editing_a_rejected_circle_sends_it_back_for_approval_and_emails_staff(): void
+    {
+        Notification::fake();
+        $staff = User::factory()->create(['role' => Role::Admin]);
+        $circle = Circle::factory()->rejected('Please say what the circle is for.')->create();
+        $creator = $circle->approval->user;
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+
+        $this->actingAs($owner)->put(route('circles.update', $circle), ['name' => $circle->name, 'description' => 'Swap tools and skills with your neighbours.']);
+
+        $approval = $circle->approval->fresh();
+        $this->assertSame(ApprovalStatus::Pending, $approval->status);
+        $this->assertNull($approval->reason);
+        $this->assertTrue($approval->user->is($creator));
+        $this->assertTrue($approval->requester->is($owner));
+        Notification::assertSentTo($staff, NewCircleAwaitingApproval::class, fn (NewCircleAwaitingApproval $notification): bool => $notification->circle->is($circle)
+            && $notification->requester->is($owner)
+            && $notification->resubmitted);
+    }
+
+    public function test_editing_an_approved_circle_keeps_it_approved_and_emails_no_one(): void
+    {
+        Notification::fake();
+        User::factory()->create(['role' => Role::Admin]);
+        $circle = Circle::factory()->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), ['name' => $circle->name, 'description' => 'Swap tools and skills with your neighbours.']);
+
+        $this->assertSame(ApprovalStatus::Approved, $circle->approval->fresh()->status);
+        Notification::assertNothingSent();
+    }
+
+    public function test_editing_a_circle_still_waiting_for_approval_does_not_email_staff_again(): void
+    {
+        Notification::fake();
+        User::factory()->create(['role' => Role::Admin]);
+        $circle = Circle::factory()->pending()->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), ['name' => $circle->name, 'description' => 'Swap tools and skills with your neighbours.']);
+
+        $this->assertSame(ApprovalStatus::Pending, $circle->approval->fresh()->status);
+        Notification::assertNothingSent();
     }
 
     public function test_staff_delete_the_circle_and_go_back_to_the_list(): void
