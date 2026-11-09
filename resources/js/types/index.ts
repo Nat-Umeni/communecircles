@@ -22,12 +22,50 @@ export interface AuthUser {
 }
 
 /**
- * A circle in the home feed, as sent by app/Http/Controllers/HomeController.php.
+ * A town or village from GeoNames, as App\DTO\GeoNames\Place::toArray() sends it.
  */
-export interface Circle {
+export interface Place {
+    geonames_id: number;
+    name: string;
+    region: string | null;
+    country_code: string;
+    country_name: string;
+    latitude: number;
+    longitude: number;
+}
+
+/**
+ * Where a circle is, as App\DTO\Location::toArray() sends it: its own name for the place, the nearest GeoNames place,
+ * or both.
+ */
+export interface Location {
+    name: string | null;
+    place: Place | null;
+    country_code: string;
+    country_name: string;
+}
+
+/**
+ * A circle in a list, as CircleController sends it.
+ */
+export interface CircleSummary {
+    public_id: string;
     name: string;
     description: string;
-    channels: string[];
+    members_count: number;
+    location: Location | null;
+}
+
+/**
+ * A page of a Laravel paginator, as Inertia receives it.
+ */
+export interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    prev_page_url: string | null;
+    next_page_url: string | null;
 }
 
 /**

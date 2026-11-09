@@ -19,6 +19,13 @@ describe('Card', () => {
         expect(plain.find('h3 span.bg-accent').exists()).toBe(false);
     });
 
+    it('links the title when given an address', () => {
+        const wrapper = mount(Card, { props: { title: 'Exchange', href: '/circles.show/k3x9q2mzt8' } });
+
+        expect(wrapper.get('h3 a').text()).toBe('Exchange');
+        expect(wrapper.get('h3 a').attributes('href')).toBe('/circles.show/k3x9q2mzt8');
+    });
+
     it('leaves out the header without a title or description', () => {
         const wrapper = mount(Card, { slots: { default: 'Just content' } });
 

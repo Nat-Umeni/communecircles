@@ -23,7 +23,7 @@ export const locales = [
 
 function freshPage(): TestPage {
     return {
-        component: 'Home',
+        component: 'circles/Index',
         props: {
             auth: { user: null },
             locale: 'en',

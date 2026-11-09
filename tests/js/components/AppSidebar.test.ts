@@ -19,8 +19,8 @@ afterEach(() => {
 });
 
 describe('AppSidebar', () => {
-    it('lists the sections, with Circles linking home and marked current on the home page', () => {
-        page.component = 'Home';
+    it('lists the sections, with Circles linking home and marked current on the circle list', () => {
+        page.component = 'circles/Index';
         const wrapper = sidebar(false);
         const circles = wrapper.get('nav a');
 

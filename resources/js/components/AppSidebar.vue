@@ -38,7 +38,7 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
             <!-- NOTE: each icon is the file of that name in public/images/icons. -->
             <!-- TODO: link each section once its page is done. -->
             <nav aria-label="Sections" class="flex flex-col gap-1">
-                <NavItem :href="route('home')" icon="circles" :active="$page.component === 'Home'">Circles</NavItem>
+                <NavItem :href="route('home')" icon="circles" :active="$page.component === 'circles/Index'">Circles</NavItem>
                 <NavItem icon="explore">Explore</NavItem>
                 <NavItem icon="learn">Learn</NavItem>
                 <NavItem icon="exchange">Exchange</NavItem>

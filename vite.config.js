@@ -50,7 +50,8 @@ export default defineConfig({
             host: 'localhost', // the address your browser uses to reach Vite
         },
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            // NOTE: coverage/ is Vitest's HTML report; watching it reloaded the browser on every coverage run.
+            ignored: ['**/storage/framework/views/**', '**/coverage/**'],
         },
     },
 });
