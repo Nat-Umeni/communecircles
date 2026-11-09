@@ -44,8 +44,9 @@ class ApprovalControllerTest extends TestCase
             ->has('approvals.data', 2)
             ->where('approvals.data.0', [
                 'id' => $older->approval->id,
+                'type' => ['value' => ApprovalType::NewCircle->value, 'label' => 'New circle'],
                 'requested_at' => $older->approval->updated_at->toIso8601String(),
-                'circle' => ['public_id' => $older->public_id, 'name' => 'Allotment', 'description' => 'Grow food together.'],
+                'subject' => ['name' => 'Allotment', 'description' => 'Grow food together.', 'url' => route('circles.show', $older)],
                 'requester' => $older->approval->requester->only('first_name', 'last_name'),
             ])
             ->where('approvals.data.1.id', $newer->approval->id));

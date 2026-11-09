@@ -2,17 +2,18 @@ import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
 import Index from '@/pages/approvals/Index.vue';
-import type { NewCircleApproval, Paginated } from '@/types';
+import type { Paginated, QueuedApproval } from '@/types';
 import { signIn } from '@tests/support';
 
-const exchange: NewCircleApproval = {
+const exchange: QueuedApproval = {
     id: 5,
+    type: { value: 'new_circle', label: 'New circle' },
     requested_at: '2026-11-08T09:00:00+00:00',
-    circle: { public_id: 'abc123', name: 'Seed Exchange', description: 'Swapping seeds that grow well here.' },
+    subject: { name: 'Seed Exchange', description: 'Swapping seeds that grow well here.', url: '/circles/abc123' },
     requester: { first_name: 'Grace', last_name: 'Hopper' },
 };
 
-function queue(data: NewCircleApproval[], pages: Partial<Paginated<NewCircleApproval>> = {}): VueWrapper {
+function queue(data: QueuedApproval[], pages: Partial<Paginated<QueuedApproval>> = {}): VueWrapper {
     signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
 
     return mount(Index, {
@@ -21,13 +22,14 @@ function queue(data: NewCircleApproval[], pages: Partial<Paginated<NewCircleAppr
 }
 
 describe('approvals/Index', () => {
-    it('lists the new circles waiting for approval, each with who asked, since when, and the decision', () => {
+    it('lists what is waiting for approval, each with what kind it is, who asked, since when, and the decision', () => {
         const wrapper = queue([exchange]);
         const card = wrapper.get('[data-approval]');
 
         expect(card.get('h3 a').text()).toBe('Seed Exchange');
-        expect(card.get('h3 a').attributes('href')).toBe('/circles.show/abc123');
+        expect(card.get('h3 a').attributes('href')).toBe('/circles/abc123');
         expect(card.text()).toContain('Swapping seeds that grow well here.');
+        expect(card.get('[data-type]').text()).toBe('New circle');
         expect(card.text()).toContain('Asked by Grace Hopper');
         expect(card.get('time').attributes('datetime')).toBe('2026-11-08T09:00:00+00:00');
         expect(wrapper.getComponent(ApprovalActions).props()).toEqual({ approval: 5, subject: 'Seed Exchange', approveLabel: 'Approve', rejectLabel: 'Reject' });
@@ -40,6 +42,10 @@ describe('approvals/Index', () => {
 
     it('says so when nothing is waiting', () => {
         expect(queue([]).text()).toContain('Nothing is waiting for approval');
+    });
+
+    it("doesn't assume what kind of thing is waiting", () => {
+        expect(queue([]).get('main').text()).not.toMatch(/circle/i);
     });
 
     it('pages through the queue', () => {

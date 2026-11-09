@@ -70,6 +70,18 @@ class Circle extends Model implements Approvable
     }
 
     /**
+     * @return array{name: string, description: string, url: string}
+     */
+    public function approvalSummary(): array
+    {
+        return [
+            'name' => $this->name,
+            'description' => $this->description,
+            'url' => route('circles.show', $this),
+        ];
+    }
+
+    /**
      * Whether staff have approved it; until then only its members and staff can see it.
      */
     public function isApproved(): bool

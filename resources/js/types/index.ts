@@ -136,12 +136,14 @@ export interface WaitingInvite {
 }
 
 /**
- * A new circle in the staff approvals queue (ApprovalController::index). requester is null if their account is gone.
+ * Something in the staff approvals queue (ApprovalController::index): what kind of approval it is, the thing waiting
+ * for approval (from its approvalSummary()), and who asked. requester is null if their account is gone.
  */
-export interface NewCircleApproval {
+export interface QueuedApproval {
     id: number;
+    type: { value: 'new_circle' | 'join_request' | 'invite'; label: string };
     requested_at: string;
-    circle: Pick<CircleDetails, 'public_id' | 'name' | 'description'>;
+    subject: { name: string; description: string; url: string };
     requester: { first_name: string; last_name: string } | null;
 }
 

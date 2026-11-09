@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { route } from 'ziggy-js';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
+import Badge from '@/components/ui/Badge.vue';
 import Card from '@/components/ui/Card.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
-import type { NewCircleApproval, Paginated } from '@/types';
+import type { Paginated, QueuedApproval } from '@/types';
 
-// From ApprovalController::index, for staff: the oldest first.
+// From ApprovalController::index, for staff: everything waiting for their approval, the longest-waiting first.
 defineProps<{
-    approvals: Paginated<NewCircleApproval>;
+    approvals: Paginated<QueuedApproval>;
 }>();
 </script>
 
@@ -18,23 +18,26 @@ defineProps<{
     <AppLayout>
         <Head title="Approvals" />
 
-        <Card title="Approvals" description="New circles waiting for the team, oldest first. Once approved, a circle is listed for everyone." />
+        <Card title="Approvals" description="Everything waiting for the team's approval, the longest-waiting first." />
 
         <Card
             v-for="approval in approvals.data"
             :key="approval.id"
-            :title="approval.circle.name"
-            :href="route('circles.show', approval.circle.public_id)"
-            :description="approval.circle.description"
+            :title="approval.subject.name"
+            :href="approval.subject.url"
+            :description="approval.subject.description"
             data-approval
         >
-            <p class="text-sm text-muted-foreground">
-                {{ approval.requester ? `Asked by ${approval.requester.first_name} ${approval.requester.last_name}` : 'Asked by a deleted account' }},
-                <TimeAgo :datetime="approval.requested_at" />
-            </p>
-            <ApprovalActions :approval="approval.id" :subject="approval.circle.name" />
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <Badge variant="secondary" data-type>{{ approval.type.label }}</Badge>
+                <p class="text-sm text-muted-foreground">
+                    {{ approval.requester ? `Asked by ${approval.requester.first_name} ${approval.requester.last_name}` : 'Asked by a deleted account' }},
+                    <TimeAgo :datetime="approval.requested_at" />
+                </p>
+            </div>
+            <ApprovalActions :approval="approval.id" :subject="approval.subject.name" />
         </Card>
-        <Card v-if="approvals.data.length === 0" title="Nothing is waiting for approval" description="New circles will show up here when they need the team." />
+        <Card v-if="approvals.data.length === 0" title="Nothing is waiting for approval" description="Anything that needs the team will show up here." />
 
         <Pagination :paginator="approvals" />
     </AppLayout>

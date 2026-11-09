@@ -21,4 +21,11 @@ interface Approvable
      * What happens once one of its approvals is approved, e.g. letting in the person who asked to join.
      */
     public function whenApproved(Approval $approval): void;
+
+    /**
+     * What it is, for whoever decides on one of its approvals: its name, a line about it, and where to see it.
+     *
+     * @return array{name: string, description: string, url: string}
+     */
+    public function approvalSummary(): array;
 }

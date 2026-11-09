@@ -31,8 +31,9 @@ class ApprovalController extends Controller
                 ->paginate(self::APPROVALS_PER_PAGE)
                 ->through(fn (Approval $approval): array => [
                     'id' => $approval->id,
+                    'type' => ['value' => $approval->type->value, 'label' => $approval->type->label()],
                     'requested_at' => $approval->updated_at->toIso8601String(),
-                    'circle' => $approval->approvable->only('public_id', 'name', 'description'),
+                    'subject' => $approval->approvable->approvalSummary(),
                     'requester' => $approval->requester?->only('first_name', 'last_name'),
                 ]),
         ]);

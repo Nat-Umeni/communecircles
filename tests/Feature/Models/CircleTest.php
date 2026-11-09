@@ -162,6 +162,17 @@ class CircleTest extends TestCase
         ];
     }
 
+    public function test_sums_itself_up_for_whoever_decides_its_approvals(): void
+    {
+        $circle = Circle::factory()->create(['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
+
+        $this->assertSame([
+            'name' => 'Exchange',
+            'description' => 'Share skills and lend tools.',
+            'url' => route('circles.show', $circle),
+        ], $circle->approvalSummary());
+    }
+
     public function test_approved_finds_only_approved_circles(): void
     {
         $approved = Circle::factory()->create();
