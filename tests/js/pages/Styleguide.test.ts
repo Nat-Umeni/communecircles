@@ -81,6 +81,15 @@ describe('Styleguide', () => {
         wrapper.unmount();
     });
 
+    it('demos the menu in the header bar\'s brand tone', async () => {
+        const wrapper = mount(Styleguide, { props, attachTo: document.body });
+
+        await wrapper.get('[aria-label="Example brand menu"]').trigger('click');
+
+        expect(wrapper.findAll('[role="menuitem"]').map((item) => item.text())).toEqual(['Create a circle']);
+        wrapper.unmount();
+    });
+
     it('keeps the segmented control demos working', async () => {
         const wrapper = styleguide();
         const tabs = () => groupButtons(wrapper, 'Example tabs');

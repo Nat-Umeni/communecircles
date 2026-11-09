@@ -30,8 +30,7 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
                 <template #trigger>
                     <Plus class="size-5" aria-hidden="true" />
                 </template>
-                <!-- TODO: link to creating a circle once it's done. -->
-                <MenuItem>
+                <MenuItem :href="route('circles.create')">
                     <CirclePlus class="size-4" aria-hidden="true" />
                     Create a circle
                 </MenuItem>

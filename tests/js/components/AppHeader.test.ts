@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import AppHeader from '@/components/AppHeader.vue';
+import { signIn } from '@tests/support';
 
 describe('AppHeader', () => {
     it('opens the sidebar drawer from the menu button', async () => {
@@ -25,6 +26,24 @@ describe('AppHeader', () => {
         await button.trigger('click');
 
         expect(wrapper.emitted('update:sidebarOpen')).toEqual([[false]]);
+    });
+
+    it('offers members a Create menu that links to making a new circle', async () => {
+        signIn();
+        const wrapper = mount(AppHeader, { props: { sidebarOpen: false }, attachTo: document.body });
+
+        await wrapper.get('[aria-label="Create"]').trigger('click');
+
+        const item = wrapper.get('[role="menuitem"]');
+        expect(item.text()).toBe('Create a circle');
+        expect(item.attributes('href')).toBe('/circles.create');
+        wrapper.unmount();
+    });
+
+    it('has no Create menu for guests', () => {
+        const wrapper = mount(AppHeader, { props: { sidebarOpen: false } });
+
+        expect(wrapper.find('[aria-label="Create"]').exists()).toBe(false);
     });
 
     it('links the logo home and has the theme toggle', () => {
