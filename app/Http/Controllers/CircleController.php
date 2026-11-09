@@ -93,7 +93,7 @@ class CircleController extends Controller
     /**
      * Show the circle's page, with what the viewer can do there. Until staff approve the circle, the page also says
      * where its approval stands, which only its members and staff can see. It also shows the viewer their own request
-     * to join, and shows the circle's owners and admins the requests waiting for them.
+     * to join or invite, and shows the circle's owners and admins the requests and invites still waiting.
      */
     public function show(Request $request, Circle $circle): Response
     {
@@ -115,8 +115,31 @@ class CircleController extends Controller
                 'can_decide' => Gate::allows('decide', $circle->approval),
             ],
             'join_request' => $this->joinRequestOf($circle, $request->user()),
-            'pending_join_requests' => $this->pendingJoinRequests($circle, $request->user()),
+            'pending_join_requests' => $this->waitingForManagers($circle, $request->user(), ApprovalType::JoinRequest, 'requested_at'),
+            'invite' => $this->inviteFor($circle, $request->user()),
+            'pending_invites' => $this->waitingForManagers($circle, $request->user(), ApprovalType::Invite, 'invited_at'),
         ]);
+    }
+
+    /**
+     * The viewer's own invite into the circle, still waiting for them to accept or decline, with who sent it; null
+     * when they have none.
+     *
+     * @return array{id: int, invited_by: string|null}|null
+     */
+    private function inviteFor(Circle $circle, ?User $viewer): ?array
+    {
+        $invite = $viewer === null ? null : $circle->approvals()
+            ->pending()
+            ->where('type', ApprovalType::Invite)
+            ->where('user_id', $viewer->id)
+            ->with('requester')
+            ->first();
+
+        return $invite === null ? null : [
+            'id' => $invite->id,
+            'invited_by' => $invite->requester === null ? null : "{$invite->requester->first_name} {$invite->requester->last_name}",
+        ];
     }
 
     /**
@@ -139,12 +162,13 @@ class CircleController extends Controller
     }
 
     /**
-     * The requests to join waiting for a decision, oldest first, for the circle's owners and admins; null for
-     * anyone else, staff included, since join requests are the circle's own business.
+     * The approvals of a type still waiting (requests to join, or invites), oldest first, each with the person it's
+     * about and since when (under $sinceKey). Only the circle's owners and admins get the list; anyone else, staff
+     * included, gets null, since who joins a circle is the circle's own business.
      *
-     * @return list<array{id: int, name: string, requested_at: string}>|null
+     * @return list<array<string, int|string>>|null
      */
-    private function pendingJoinRequests(Circle $circle, ?User $viewer): ?array
+    private function waitingForManagers(Circle $circle, ?User $viewer, ApprovalType $type, string $sinceKey): ?array
     {
         if ($viewer === null || ! ($circle->membershipOf($viewer)?->role->hasManagerRole() ?? false)) {
             return null;
@@ -152,15 +176,15 @@ class CircleController extends Controller
 
         return $circle->approvals()
             ->pending()
-            ->where('type', ApprovalType::JoinRequest)
+            ->where('type', $type)
             ->with('user')
             ->oldest('updated_at')
             ->get()
-            // TODO: add each asker's profile link once profiles exist, so owners and admins can check them before deciding.
-            ->map(fn (Approval $request): array => [
-                'id' => $request->id,
-                'name' => "{$request->user->first_name} {$request->user->last_name}",
-                'requested_at' => $request->updated_at->toIso8601String(),
+            // TODO: add each person's profile link once profiles exist, so owners and admins can check them first.
+            ->map(fn (Approval $approval): array => [
+                'id' => $approval->id,
+                'name' => "{$approval->user->first_name} {$approval->user->last_name}",
+                $sinceKey => $approval->updated_at->toIso8601String(),
             ])
             ->all();
     }

@@ -60,6 +60,15 @@ class CirclePolicy
     }
 
     /**
+     * Determine whether the user can invite people into the circle: its owners and admins, once it's approved.
+     * Staff can't, since who's in a circle is the circle's own business.
+     */
+    public function invite(User $user, Circle $circle): bool
+    {
+        return $circle->isApproved() && ($circle->membershipOf($user)?->role->hasManagerRole() ?? false);
+    }
+
+    /**
      * Determine whether the user can create a circle. Staff can straight away; everyone else needs a confirmed
      * email and an account a few minutes old, and is told which one is missing (email first, since they can act on it).
      */

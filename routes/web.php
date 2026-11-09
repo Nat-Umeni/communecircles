@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CircleController;
+use App\Http\Controllers\InviteController;
 use App\Http\Controllers\JoinRequestController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\StyleguideController;
@@ -36,6 +37,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('circles', CircleController::class)->except(['index', 'show']);
     Route::post('/circles/{circle}/join-requests', [JoinRequestController::class, 'store'])->name('circles.join-requests.store');
+    Route::post('/circles/{circle}/invites', [InviteController::class, 'store'])->name('circles.invites.store');
 
     // GeoNames' free account allows 1,000 requests an hour, so each member gets 30 place searches a minute.
     Route::get('/places', PlaceController::class)->name('places.search')->middleware('throttle:30,1');

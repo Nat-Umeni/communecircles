@@ -162,6 +162,56 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($invitee->can('requestToJoin', $circle));
     }
 
+    /**
+     * @param  'Owner'|'Admin'  $role
+     */
+    #[DataProvider('managerRoleNames')]
+    public function test_the_circles_owners_and_admins_can_invite_people(string $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertTrue($this->memberOf($circle, constant(CircleRole::class.'::'.$role))->can('invite', $circle));
+    }
+
+    #[DataProvider('unapproved')]
+    public function test_nobody_can_invite_people_into_a_circle_that_is_not_approved(string $state): void
+    {
+        $circle = Circle::factory()->{$state}()->create();
+
+        $this->assertFalse($this->memberOf($circle, CircleRole::Owner)->can('invite', $circle));
+    }
+
+    public function test_plain_members_cannot_invite_people(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($this->memberOf($circle, CircleRole::Member)->can('invite', $circle));
+    }
+
+    public function test_someone_outside_the_circle_cannot_invite_people(): void
+    {
+        $circle = Circle::factory()->create();
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertFalse($outsider->can('invite', $circle));
+    }
+
+    public function test_staff_cannot_invite_people_into_a_circle_they_do_not_run(): void
+    {
+        $this->assertFalse(User::factory()->create(['role' => Role::SuperAdmin])->can('invite', Circle::factory()->create()));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function managerRoleNames(): array
+    {
+        return [
+            'owner' => ['Owner'],
+            'admin' => ['Admin'],
+        ];
+    }
+
     public function test_guests_cannot_ask_to_join(): void
     {
         $this->assertFalse(Gate::allows('requestToJoin', Circle::factory()->create()));

@@ -356,6 +356,86 @@ class CircleControllerTest extends TestCase
         ];
     }
 
+    public function test_shows_someone_the_invite_waiting_for_them_and_who_sent_it(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+        $circle->members()->attach($owner, ['role' => CircleRole::Owner]);
+        $invitee = User::factory()->create();
+        $invite = Approval::open(ApprovalType::Invite, $circle, $invitee, $owner);
+
+        $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace']));
+    }
+
+    public function test_shows_no_sender_for_an_invite_from_an_account_since_deleted(): void
+    {
+        $circle = Circle::factory()->create();
+        $invitee = User::factory()->create();
+        $invite = Approval::open(ApprovalType::Invite, $circle, $invitee, $this->memberOf($circle, CircleRole::Owner));
+        $invite->update(['requested_by' => null]);
+
+        $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite.invited_by', null));
+    }
+
+    public function test_shows_the_circles_owners_and_admins_the_invites_still_waiting_oldest_first(): void
+    {
+        $this->freezeSecond();
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $first = User::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper']);
+        $firstInvite = Approval::open(ApprovalType::Invite, $circle, $first, $owner);
+        $this->travel(1)->hour();
+        $secondInvite = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+        $decliner = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $decliner, $owner)->reject($decliner);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Admin))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pending_invites', 2)
+            ->where('pending_invites.0', [
+                'id' => $firstInvite->id,
+                'name' => 'Grace Hopper',
+                'invited_at' => $firstInvite->updated_at->toIso8601String(),
+            ])
+            ->where('pending_invites.1.id', $secondInvite->id));
+    }
+
+    public function test_someone_without_an_invite_waiting_sees_none_even_when_others_are_invited(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+        $decliner = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $decliner, $owner)->reject($decliner);
+
+        $this->get(route('circles.show', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('invite', null));
+        $this->actingAs(User::factory()->create())->get(route('circles.show', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('invite', null));
+        $this->actingAs($decliner)->get(route('circles.show', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('invite', null));
+    }
+
+    /**
+     * @param  Closure(Circle): ?User  $viewer
+     */
+    #[DataProvider('notManagers')]
+    public function test_only_the_circles_owners_and_admins_see_the_invites_waiting(Closure $viewer): void
+    {
+        $circle = Circle::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
+        $user = $viewer($circle);
+
+        $response = ($user === null ? $this : $this->actingAs($user))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('pending_invites', null));
+    }
+
     public function test_an_unknown_circle_is_not_found(): void
     {
         $response = $this->get(route('circles.show', 'abcdefghij'));
