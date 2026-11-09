@@ -5,8 +5,10 @@ namespace Tests\Feature\Http\Controllers;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\ApprovalStatus;
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Enums\Role;
+use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
 use App\Notifications\Circle\NewCircleAwaitingApproval;
@@ -253,6 +255,105 @@ class CircleControllerTest extends TestCase
         $response = $this->get(route('circles.show', Circle::factory()->create()));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval', null));
+    }
+
+    public function test_shows_someone_their_own_request_to_join_while_it_waits(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+
+        $response = $this->actingAs($asker)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('join_request', [
+            'status' => 'pending',
+            'label' => 'Waiting for approval',
+            'reason' => null,
+        ]));
+    }
+
+    public function test_shows_someone_why_their_request_to_join_was_turned_down(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker)->reject($this->memberOf($circle, CircleRole::Owner), 'We are full for now.');
+
+        $response = $this->actingAs($asker)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('join_request.status', 'rejected')
+            ->where('join_request.reason', 'We are full for now.'));
+    }
+
+    public function test_shows_the_circles_owners_and_admins_the_requests_waiting_for_them_oldest_first(): void
+    {
+        $this->freezeSecond();
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $first = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+        $firstRequest = Approval::open(ApprovalType::JoinRequest, $circle, $first, $first);
+        $this->travel(1)->hour();
+        $second = User::factory()->create();
+        $secondRequest = Approval::open(ApprovalType::JoinRequest, $circle, $second, $second);
+        $declined = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $declined, $declined)->reject($owner);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Admin))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pending_join_requests', 2)
+            ->where('pending_join_requests.0', [
+                'id' => $firstRequest->id,
+                'name' => 'Ada Lovelace',
+                'requested_at' => $firstRequest->updated_at->toIso8601String(),
+            ])
+            ->where('pending_join_requests.1.id', $secondRequest->id));
+    }
+
+    public function test_someone_who_has_not_asked_sees_no_request_of_theirs_even_when_others_have_asked(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+
+        $this->get(route('circles.show', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('join_request', null));
+        $this->actingAs(User::factory()->create())->get(route('circles.show', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('join_request', null));
+    }
+
+    /**
+     * @param  Closure(Circle): ?User  $viewer
+     */
+    #[DataProvider('notManagers')]
+    public function test_only_the_circles_owners_and_admins_see_the_requests_to_join(Closure $viewer): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+        $user = $viewer($circle);
+
+        $response = ($user === null ? $this : $this->actingAs($user))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('pending_join_requests', null));
+    }
+
+    /**
+     * @return array<string, array{Closure(Circle): ?User}>
+     */
+    public static function notManagers(): array
+    {
+        return [
+            'a guest' => [fn (): ?User => null],
+            'someone outside the circle' => [fn (): User => User::factory()->create()],
+            'a plain member' => [function (Circle $circle): User {
+                $member = User::factory()->create();
+                $circle->members()->attach($member, ['role' => CircleRole::Member]);
+
+                return $member;
+            }],
+            'staff' => [fn (): User => User::factory()->create(['role' => Role::SuperAdmin])],
+        ];
     }
 
     public function test_an_unknown_circle_is_not_found(): void

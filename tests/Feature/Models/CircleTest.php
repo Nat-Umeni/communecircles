@@ -59,6 +59,18 @@ class CircleTest extends TestCase
         $this->assertSame([$owner->id], $circle->owners->modelKeys());
     }
 
+    public function test_managers_are_the_owners_and_admins(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = User::factory()->create();
+        $admin = User::factory()->create();
+        $circle->members()->attach($owner, ['role' => CircleRole::Owner]);
+        $circle->members()->attach($admin, ['role' => CircleRole::Admin]);
+        $circle->members()->attach(User::factory()->create(), ['role' => CircleRole::Member]);
+
+        $this->assertEqualsCanonicalizing([$owner->id, $admin->id], $circle->managers->modelKeys());
+    }
+
     public function test_membership_of_a_member_is_their_own_row_with_their_role(): void
     {
         $circle = Circle::factory()->create();

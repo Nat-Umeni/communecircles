@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ApprovalType;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -43,11 +44,19 @@ class CirclePolicy
     }
 
     /**
-     * Determine whether the user can ask to join the circle.
+     * Determine whether the user can ask to join the circle: an approved circle they're not in, with a confirmed
+     * email, and no request or invite of theirs still waiting. After a refusal or a declined invite they can ask again.
      */
     public function requestToJoin(User $user, Circle $circle): bool
     {
-        return $circle->isApproved() && $user->hasVerifiedEmail() && $circle->membershipOf($user) === null;
+        return $circle->isApproved()
+            && $user->hasVerifiedEmail()
+            && $circle->membershipOf($user) === null
+            && ! $circle->approvals()
+                ->pending()
+                ->whereIn('type', [ApprovalType::JoinRequest, ApprovalType::Invite])
+                ->where('user_id', $user->id)
+                ->exists();
     }
 
     /**

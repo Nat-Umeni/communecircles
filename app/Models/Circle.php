@@ -75,6 +75,17 @@ class Circle extends Model implements Approvable
         return $this->members()->wherePivot('role', CircleRole::Owner->value);
     }
 
+    /**
+     * Its owners and admins, who run the circle and decide on requests to join.
+     */
+    public function managers(): BelongsToMany
+    {
+        return $this->members()->wherePivotIn(
+            'role',
+            array_map(fn (CircleRole $role): string => $role->value, array_filter(CircleRole::cases(), fn (CircleRole $role): bool => $role->hasManagerRole())),
+        );
+    }
+
     public function members(): BelongsToMany
     {
         return $this->belongsToMany(User::class)

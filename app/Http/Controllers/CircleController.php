@@ -92,9 +92,10 @@ class CircleController extends Controller
 
     /**
      * Show the circle's page, with what the viewer can do there. Until staff approve the circle, the page also says
-     * where its approval stands, which only its members and staff can see.
+     * where its approval stands, which only its members and staff can see. It also shows the viewer their own request
+     * to join, and shows the circle's owners and admins the requests waiting for them.
      */
-    public function show(Circle $circle): Response
+    public function show(Request $request, Circle $circle): Response
     {
         Gate::authorize('view', $circle);
 
@@ -113,7 +114,55 @@ class CircleController extends Controller
                 'reason' => $circle->approval->reason,
                 'can_decide' => Gate::allows('decide', $circle->approval),
             ],
+            'join_request' => $this->joinRequestOf($circle, $request->user()),
+            'pending_join_requests' => $this->pendingJoinRequests($circle, $request->user()),
         ]);
+    }
+
+    /**
+     * The viewer's own request to join, with where it stands, or null when they haven't asked.
+     *
+     * @return array{status: string, label: string, reason: string|null}|null
+     */
+    private function joinRequestOf(Circle $circle, ?User $viewer): ?array
+    {
+        $request = $viewer === null ? null : $circle->approvals()
+            ->where('type', ApprovalType::JoinRequest)
+            ->where('user_id', $viewer->id)
+            ->first();
+
+        return $request === null ? null : [
+            'status' => $request->status->value,
+            'label' => $request->status->label(),
+            'reason' => $request->reason,
+        ];
+    }
+
+    /**
+     * The requests to join waiting for a decision, oldest first, for the circle's owners and admins; null for
+     * anyone else, staff included, since join requests are the circle's own business.
+     *
+     * @return list<array{id: int, name: string, requested_at: string}>|null
+     */
+    private function pendingJoinRequests(Circle $circle, ?User $viewer): ?array
+    {
+        if ($viewer === null || ! ($circle->membershipOf($viewer)?->role->hasManagerRole() ?? false)) {
+            return null;
+        }
+
+        return $circle->approvals()
+            ->pending()
+            ->where('type', ApprovalType::JoinRequest)
+            ->with('user')
+            ->oldest('updated_at')
+            ->get()
+            // TODO: add each asker's profile link once profiles exist, so owners and admins can check them before deciding.
+            ->map(fn (Approval $request): array => [
+                'id' => $request->id,
+                'name' => "{$request->user->first_name} {$request->user->last_name}",
+                'requested_at' => $request->updated_at->toIso8601String(),
+            ])
+            ->all();
     }
 
     /**

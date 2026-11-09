@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Policies;
 
+use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Enums\Role;
+use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -122,6 +124,42 @@ class CirclePolicyTest extends TestCase
         $user = User::factory()->unverified()->create();
 
         $this->assertFalse($user->can('requestToJoin', Circle::factory()->create()));
+    }
+
+    public function test_someone_whose_request_to_join_is_still_waiting_cannot_ask_again(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+
+        $this->assertFalse($asker->can('requestToJoin', $circle));
+    }
+
+    public function test_someone_with_an_invite_waiting_cannot_ask_to_join_too(): void
+    {
+        $circle = Circle::factory()->create();
+        $invitee = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $invitee, $this->memberOf($circle, CircleRole::Owner));
+
+        $this->assertFalse($invitee->can('requestToJoin', $circle));
+    }
+
+    public function test_someone_whose_request_was_turned_down_can_ask_again(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker)->reject($this->memberOf($circle, CircleRole::Owner));
+
+        $this->assertTrue($asker->can('requestToJoin', $circle));
+    }
+
+    public function test_someone_who_declined_an_invite_can_still_ask_to_join_later(): void
+    {
+        $circle = Circle::factory()->create();
+        $invitee = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $invitee, $this->memberOf($circle, CircleRole::Owner))->reject($invitee);
+
+        $this->assertTrue($invitee->can('requestToJoin', $circle));
     }
 
     public function test_guests_cannot_ask_to_join(): void
