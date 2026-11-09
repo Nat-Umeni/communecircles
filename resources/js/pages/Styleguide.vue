@@ -9,7 +9,9 @@ import Badge from '@/components/ui/Badge.vue';
 import BrandIcon from '@/components/ui/BrandIcon.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
+import Dialog from '@/components/ui/Dialog.vue';
 import NavItem from '@/components/ui/NavItem.vue';
+import Pagination from '@/components/ui/Pagination.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
@@ -17,6 +19,8 @@ import Checkbox from '@/components/ui/form/Checkbox.vue';
 import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
 import PasswordInput from '@/components/ui/form/PasswordInput.vue';
+import Select from '@/components/ui/form/Select.vue';
+import Textarea from '@/components/ui/form/Textarea.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
 
@@ -58,6 +62,17 @@ const language = ref('en');
 const text = ref('');
 const password = ref('');
 const checked = ref(false);
+const longText = ref('');
+const country = ref('');
+const dialogOpen = ref(false);
+
+const countries = [
+    { value: 'GB', label: 'United Kingdom' },
+    { value: 'LI', label: 'Liechtenstein' },
+];
+
+// A middle page, so both directions show.
+const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_page_url: '#', next_page_url: '#' };
 </script>
 
 <template>
@@ -169,7 +184,26 @@ const checked = ref(false);
                     <Checkbox v-model="checked" />
                     Checkbox with its label
                 </label>
+                <Textarea v-model="longText" placeholder="Longer text" aria-label="Example textarea" />
+                <Select v-model="country" :options="countries" placeholder="Choose a country" aria-label="Example select" />
             </div>
+        </Card>
+
+        <Card title="Paging" description="Pagination takes a Laravel paginator's page and links to the pages either side.">
+            <Pagination :paginator="examplePages" />
+        </Card>
+
+        <Card title="Dialogs" description="Dialog opens on top of the page with v-model:open; Escape or its close button closes it.">
+            <div>
+                <Button variant="surface" data-demo="open-dialog" @click="dialogOpen = true">Open the example dialog</Button>
+            </div>
+            <Dialog v-model:open="dialogOpen" title="Example dialog">
+                <p>Dialogs ask for a decision, like confirming that a circle should be deleted.</p>
+                <template #actions>
+                    <Button variant="surface" @click="dialogOpen = false">Cancel</Button>
+                    <Button @click="dialogOpen = false">Confirm</Button>
+                </template>
+            </Dialog>
         </Card>
 
         <Card title="Alerts" description="Short messages, like the ones flashed after resetting a password. Both layouts show a flashed status in a success Alert.">

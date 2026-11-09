@@ -72,6 +72,53 @@ describe('Styleguide', () => {
         expect(checkbox.element.checked).toBe(true);
     });
 
+    it('demos the textarea and the select', async () => {
+        const wrapper = styleguide();
+        const textarea = wrapper.get<HTMLTextAreaElement>('textarea[aria-label="Example textarea"]');
+        const select = wrapper.get<HTMLSelectElement>('select[aria-label="Example select"]');
+
+        await textarea.setValue('A longer answer.');
+        await select.setValue('LI');
+
+        expect(textarea.element.value).toBe('A longer answer.');
+        expect(select.element.value).toBe('LI');
+    });
+
+    it('demos paging', () => {
+        const pages = styleguide().get('nav[aria-label="Pages"]');
+
+        expect(pages.text()).toContain('Page 2 of 3');
+    });
+
+    it('demos a dialog that opens from a button and closes again', async () => {
+        const wrapper = mount(Styleguide, { props, attachTo: document.body });
+        const dialog = () => wrapper.get<HTMLDialogElement>('dialog').element;
+
+        expect(dialog().open).toBe(false);
+
+        await wrapper.get('button[data-demo="open-dialog"]').trigger('click');
+        expect(dialog().open).toBe(true);
+        expect(wrapper.get('dialog h2').text()).toBe('Example dialog');
+
+        await wrapper.get('dialog button[aria-label="Close"]').trigger('click');
+        expect(dialog().open).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('closes the demo dialog with either of its actions', async () => {
+        const wrapper = mount(Styleguide, { props, attachTo: document.body });
+        const dialog = () => wrapper.get<HTMLDialogElement>('dialog').element;
+        const action = (label: string) => wrapper.findAll('dialog footer button').find((button) => button.text() === label)!;
+
+        for (const label of ['Cancel', 'Confirm']) {
+            await wrapper.get('button[data-demo="open-dialog"]').trigger('click');
+            await action(label).trigger('click');
+            expect(dialog().open, label).toBe(false);
+        }
+
+        wrapper.unmount();
+    });
+
     it('demos the dropdown menu', async () => {
         const wrapper = mount(Styleguide, { props, attachTo: document.body });
 

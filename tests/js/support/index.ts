@@ -4,6 +4,7 @@
  */
 export * from './dom';
 export * from './form';
+export * from './http';
 export * from './page';
 export * from './route';
 export * from './router';

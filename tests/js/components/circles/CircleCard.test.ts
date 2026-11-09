@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import CircleCard from '@/components/circles/CircleCard.vue';
-import type { CircleSummary } from '@/types';
+import type { CircleOfMine, CircleSummary } from '@/types';
 
 const exchange: CircleSummary = {
     public_id: 'k3x9q2mzt8',
@@ -25,5 +25,29 @@ describe('CircleCard', () => {
         expect(mount(CircleCard, { props: { circle: exchange } }).text()).toContain('3 members');
         expect(mount(CircleCard, { props: { circle: { ...exchange, members_count: 1 } } }).text()).toContain('1 member');
         expect(mount(CircleCard, { props: { circle: { ...exchange, members_count: 1 } } }).text()).not.toContain('1 members');
+    });
+
+    it('says where the circle is when it has a location', () => {
+        const located: CircleSummary = {
+            ...exchange,
+            location: { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom' },
+        };
+
+        expect(mount(CircleCard, { props: { circle: located } }).text()).toContain('Fernhill Farm, United Kingdom');
+        expect(mount(CircleCard, { props: { circle: exchange } }).find('svg').exists()).toBe(false);
+    });
+
+    it("shows a badge when one of the member's own circles is not approved yet", () => {
+        const waiting: CircleOfMine = { ...exchange, status: { value: 'pending', label: 'Waiting for approval' } };
+        const approved: CircleOfMine = { ...exchange, status: { value: 'approved', label: 'Approved' } };
+
+        const rejected: CircleOfMine = { ...exchange, status: { value: 'rejected', label: 'Not approved' } };
+
+        expect(mount(CircleCard, { props: { circle: waiting } }).get('[data-status]').text()).toBe('Waiting for approval');
+        expect(mount(CircleCard, { props: { circle: waiting } }).get('[data-status]').classes()).toContain('bg-warning');
+        expect(mount(CircleCard, { props: { circle: rejected } }).get('[data-status]').text()).toBe('Not approved');
+        expect(mount(CircleCard, { props: { circle: rejected } }).get('[data-status]').classes()).toContain('bg-danger');
+        expect(mount(CircleCard, { props: { circle: approved } }).find('[data-status]').exists()).toBe(false);
+        expect(mount(CircleCard, { props: { circle: exchange } }).find('[data-status]').exists()).toBe(false);
     });
 });

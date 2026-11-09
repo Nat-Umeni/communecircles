@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import type { Component } from 'vue';
 import BrandIcon from '@/components/ui/BrandIcon.vue';
 
 defineProps<{
     href?: string;
-    icon: string;
+    /** A brand icon's name (public/images/icons), or a Lucide icon component for items with no brand icon. */
+    icon: string | Component;
     active?: boolean;
 }>();
 </script>
@@ -20,7 +22,10 @@ defineProps<{
             href && 'focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         ]"
     >
-        <BrandIcon :name="icon" :size="36" />
+        <BrandIcon v-if="typeof icon === 'string'" :name="icon" :size="36" />
+        <span v-else class="grid size-9 shrink-0 place-items-center">
+            <component :is="icon" class="size-6" aria-hidden="true" />
+        </span>
         <slot />
     </component>
 </template>

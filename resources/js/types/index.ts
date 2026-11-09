@@ -46,14 +46,35 @@ export interface Location {
 }
 
 /**
- * A circle in a list, as CircleController sends it.
+ * A circle's own details, as CircleController::details() sends them.
  */
-export interface CircleSummary {
+export interface CircleDetails {
     public_id: string;
     name: string;
     description: string;
-    members_count: number;
     location: Location | null;
+}
+
+/**
+ * A circle in a list, as CircleController sends it.
+ */
+export interface CircleSummary extends CircleDetails {
+    members_count: number;
+}
+
+/**
+ * Where an approval stands: the value of App\Enums\ApprovalStatus, with its label.
+ */
+export interface ApprovalStatus {
+    value: 'pending' | 'approved' | 'rejected';
+    label: string;
+}
+
+/**
+ * One of the member's own circles (your_circles), approved or not.
+ */
+export interface CircleOfMine extends CircleSummary {
+    status: ApprovalStatus;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import NavItem from '@/components/ui/NavItem.vue';
+import { ShieldCheck } from '@lucide/vue';
 import { fakeRouter } from '@tests/support';
 
 describe('NavItem', () => {
@@ -30,5 +31,13 @@ describe('NavItem', () => {
 
         expect(wrapper.element.tagName).toBe('SPAN');
         expect(wrapper.attributes('href')).toBeUndefined();
+    });
+
+    it('can show a Lucide icon instead of a brand icon', () => {
+        const wrapper = mount(NavItem, { props: { icon: ShieldCheck, href: '/approvals.index' }, slots: { default: 'Approvals' } });
+
+        expect(wrapper.find('img').exists()).toBe(false);
+        expect(wrapper.get('svg').attributes('aria-hidden')).toBe('true');
+        expect(wrapper.text()).toBe('Approvals');
     });
 });
