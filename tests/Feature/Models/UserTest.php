@@ -10,6 +10,8 @@ use Carbon\CarbonInterface;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Spatie\Activitylog\Enums\ActivityEvent;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class UserTest extends TestCase
@@ -112,5 +114,106 @@ class UserTest extends TestCase
         $user = User::factory()->make();
 
         $this->assertSame(Role::User, $user->role);
+    }
+
+    public function test_logs_a_new_member_joining_without_their_password(): void
+    {
+        $user = User::factory()->create(['first_name' => 'Ada', 'email' => 'ada@example.com']);
+
+        $activity = $this->lastActivity();
+        $this->assertSame(ActivityEvent::Created->value, $activity->event);
+        $this->assertTrue($activity->subject->is($user));
+        $this->assertNull($activity->causer);
+        $this->assertSame('Ada', $activity->attribute_changes['attributes']['first_name']);
+        $this->assertSame('ada@example.com', $activity->attribute_changes['attributes']['email']);
+        $this->assertArrayNotHasKey('password', $activity->attribute_changes['attributes']);
+        $this->assertArrayNotHasKey('remember_token', $activity->attribute_changes['attributes']);
+    }
+
+    public function test_logs_changes_to_a_members_name_and_role_with_who_made_them(): void
+    {
+        $user = User::factory()->create(['first_name' => 'Ada', 'role' => Role::User]);
+        $superAdmin = User::factory()->create(['role' => Role::SuperAdmin]);
+        $this->actingAs($superAdmin);
+
+        $user->forceFill(['first_name' => 'Augusta', 'role' => Role::Admin])->save();
+
+        $activity = $this->lastActivity();
+        $this->assertSame(ActivityEvent::Updated->value, $activity->event);
+        $this->assertTrue($activity->subject->is($user));
+        $this->assertTrue($activity->causer->is($superAdmin));
+        $this->assertSame(['first_name' => 'Augusta', 'role' => 'admin'], $activity->attribute_changes['attributes']);
+        $this->assertSame(['first_name' => 'Ada', 'role' => 'user'], $activity->attribute_changes['old']);
+    }
+
+    public function test_logs_a_member_confirming_their_email(): void
+    {
+        $user = User::factory()->unverified()->create();
+        $this->actingAs($user);
+
+        $user->markEmailAsVerified();
+
+        $activity = $this->lastActivity();
+        $this->assertSame(ActivityEvent::Updated->value, $activity->event);
+        $this->assertSame(['email_verified_at'], array_keys($activity->attribute_changes['attributes']));
+        $this->assertNotNull($activity->attribute_changes['attributes']['email_verified_at']);
+        $this->assertNull($activity->attribute_changes['old']['email_verified_at']);
+    }
+
+    public function test_logs_that_the_password_changed_without_storing_it_or_its_hash(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $user->forceFill(['password' => 'Another-password-1'])->save();
+
+        $activity = $this->lastActivity();
+        $this->assertSame(ActivityEvent::Updated->value, $activity->event);
+        $this->assertTrue($activity->causer->is($user));
+        $this->assertSame(['password' => '[hidden]'], $activity->attribute_changes['attributes']);
+        $this->assertSame(['password' => '[hidden]'], $activity->attribute_changes['old']);
+        $this->assertStringNotContainsString($user->password, $activity->getRawOriginal('attribute_changes'));
+    }
+
+    public function test_does_not_log_a_new_remember_token(): void
+    {
+        $user = User::factory()->create();
+        $logged = Activity::query()->count();
+
+        $user->forceFill(['remember_token' => 'new-token'])->save();
+
+        $this->assertSame($logged, Activity::query()->count());
+    }
+
+    public function test_does_not_log_a_save_that_only_touches_the_timestamps(): void
+    {
+        $user = User::factory()->create();
+        $logged = Activity::query()->count();
+        $this->travel(1)->minute();
+
+        $user->touch();
+
+        $this->assertSame($logged, Activity::query()->count());
+    }
+
+    public function test_logs_a_member_being_deleted_with_their_details(): void
+    {
+        $user = User::factory()->create(['email' => 'ada@example.com']);
+
+        $user->delete();
+
+        $activity = $this->lastActivity();
+        $this->assertSame(ActivityEvent::Deleted->value, $activity->event);
+        $this->assertSame($user->id, $activity->subject_id);
+        $this->assertSame('ada@example.com', $activity->attribute_changes['old']['email']);
+        $this->assertArrayNotHasKey('password', $activity->attribute_changes['old']);
+    }
+
+    /**
+     * The newest audit log entry.
+     */
+    private function lastActivity(): Activity
+    {
+        return Activity::query()->latest('id')->firstOrFail();
     }
 }
