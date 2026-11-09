@@ -11,6 +11,8 @@ use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Activitylog\Enums\ActivityEvent;
+use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
 class CircleTest extends TestCase
@@ -248,5 +250,90 @@ class CircleTest extends TestCase
     private function totnes(): Place
     {
         return new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843);
+    }
+
+    public function test_logs_a_new_circle_with_its_details_and_who_created_it(): void
+    {
+        $creator = User::factory()->create();
+        $this->actingAs($creator);
+
+        $circle = Circle::factory()->create(['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
+
+        $activity = $this->lastActivityAbout($circle);
+        $this->assertSame(ActivityEvent::Created->value, $activity->event);
+        $this->assertTrue($activity->causer->is($creator));
+        $this->assertSame('Exchange', $activity->attribute_changes['attributes']['name']);
+        $this->assertSame('Share skills and lend tools.', $activity->attribute_changes['attributes']['description']);
+    }
+
+    public function test_logs_changes_to_a_circles_details_and_location_with_who_made_them(): void
+    {
+        $circle = Circle::factory()->create(['name' => 'Exchange']);
+        $owner = User::factory()->create();
+        $this->actingAs($owner);
+
+        $circle->name = 'Tool library';
+        $circle->locate(Location::named('Fernhill Farm', 'GB'));
+        $circle->save();
+
+        $activity = $this->lastActivityAbout($circle);
+        $this->assertSame(ActivityEvent::Updated->value, $activity->event);
+        $this->assertTrue($activity->causer->is($owner));
+        $this->assertSame([
+            'name' => 'Tool library',
+            'location_name' => 'Fernhill Farm',
+            'country_code' => 'GB',
+            'country_name' => 'United Kingdom',
+        ], $activity->attribute_changes['attributes']);
+        $this->assertSame('Exchange', $activity->attribute_changes['old']['name']);
+        $this->assertNull($activity->attribute_changes['old']['location_name']);
+    }
+
+    public function test_logs_a_move_to_a_geonames_place_with_where_it_is(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $circle->locate(Location::at(new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843)));
+        $circle->save();
+
+        $this->assertSame([
+            'geonames_id' => 2635610,
+            'place_name' => 'Totnes',
+            'region' => 'England',
+            'country_code' => 'GB',
+            'country_name' => 'United Kingdom',
+            'latitude' => 50.43107,
+            'longitude' => -3.6843,
+        ], $this->lastActivityAbout($circle)->attribute_changes['attributes']);
+    }
+
+    public function test_does_not_log_a_save_that_only_touches_the_timestamps(): void
+    {
+        $circle = Circle::factory()->create();
+        $logged = Activity::query()->count();
+        $this->travel(1)->minute();
+
+        $circle->touch();
+
+        $this->assertSame($logged, Activity::query()->count());
+    }
+
+    public function test_logs_a_circle_being_deleted_with_its_details(): void
+    {
+        $circle = Circle::factory()->create(['name' => 'Exchange']);
+
+        $circle->delete();
+
+        $activity = $this->lastActivityAbout($circle);
+        $this->assertSame(ActivityEvent::Deleted->value, $activity->event);
+        $this->assertSame('Exchange', $activity->attribute_changes['old']['name']);
+    }
+
+    /**
+     * The newest audit log entry about the circle.
+     */
+    private function lastActivityAbout(Circle $circle): Activity
+    {
+        return Activity::query()->whereMorphedTo('subject', $circle)->latest('id')->firstOrFail();
     }
 }

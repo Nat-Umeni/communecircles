@@ -18,12 +18,28 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable(['name', 'description'])]
 class Circle extends Model implements Approvable
 {
     /** @use HasFactory<CircleFactory> */
-    use HasFactory, HasPublicId;
+    use HasFactory, HasPublicId, LogsActivity;
+
+    /**
+     * Record changes to the circle's details and location in the audit log, with who made them; only what changed.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'name', 'description',
+                'location_name', 'geonames_id', 'place_name', 'region', 'country_code', 'country_name', 'latitude', 'longitude',
+            ])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
+    }
 
     /**
      * @return MorphMany<Approval, $this>
@@ -90,7 +106,7 @@ class Circle extends Model implements Approvable
     {
         return $this->belongsToMany(User::class)
             ->using(CircleUser::class)
-            ->withPivot('role')
+            ->withPivot('id', 'role')
             ->withTimestamps();
     }
 

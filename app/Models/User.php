@@ -107,7 +107,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Circle::class)
             ->using(CircleUser::class)
-            ->withPivot('role')
+            ->withPivot('id', 'role')
             ->withTimestamps();
     }
 }

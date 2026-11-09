@@ -5,6 +5,7 @@ namespace Tests\Feature\Models;
 use App\Enums\CircleRole;
 use App\Enums\Role;
 use App\Models\Circle;
+use App\Models\CircleUser;
 use App\Models\User;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
@@ -127,6 +128,17 @@ class UserTest extends TestCase
 
         $this->assertSame([$circle->id], $user->circles->modelKeys());
         $this->assertSame(CircleRole::Admin, $user->circles->first()->pivot->role);
+    }
+
+    public function test_each_circles_membership_is_the_actual_membership_row(): void
+    {
+        $user = User::factory()->create();
+        $circle = Circle::factory()->create();
+        $circle->members()->attach($user, ['role' => CircleRole::Member]);
+
+        $membership = $user->circles->first()->pivot;
+
+        $this->assertSame(CircleUser::query()->where('user_id', $user->id)->value('id'), $membership->id);
     }
 
     public function test_staff_are_the_admins_and_super_admins(): void
