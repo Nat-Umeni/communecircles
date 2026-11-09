@@ -45,24 +45,60 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->component('circles/Index'));
     }
 
-    public function test_lists_circles_in_name_order_with_their_member_counts(): void
+    public function test_lists_the_most_popular_circles_first_then_by_name_with_their_member_counts(): void
     {
         $exchange = Circle::factory()->create(['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
         $exchange->members()->attach(User::factory()->count(2)->create(), ['role' => CircleRole::Member]);
+        Circle::factory()->create(['name' => 'Bakery']);
         Circle::factory()->create(['name' => 'Allotment']);
 
         $response = $this->get(route('circles.index'));
 
         $response->assertOk();
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('circles.data.0.name', 'Allotment')
-            ->where('circles.data.1', [
+            ->where('circles.data.1.name', 'Allotment')
+            ->where('circles.data.2.name', 'Bakery')
+            ->where('circles.data.0', [
                 'public_id' => $exchange->public_id,
                 'name' => 'Exchange',
                 'description' => 'Share skills and lend tools.',
                 'members_count' => 2,
                 'location' => null,
             ]));
+    }
+
+    public function test_gives_a_member_their_own_circles_in_name_order_including_ones_waiting_for_approval(): void
+    {
+        $member = User::factory()->create();
+        $exchange = Circle::factory()->pending()->create(['name' => 'Exchange', 'description' => 'Share skills and lend tools.']);
+        $exchange->members()->attach($member, ['role' => CircleRole::Owner]);
+        $allotment = Circle::factory()->create(['name' => 'Allotment']);
+        $allotment->members()->attach($member, ['role' => CircleRole::Member]);
+        Circle::factory()->create(['name' => 'Bakery']);
+
+        $response = $this->actingAs($member)->get(route('circles.index'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('your_circles', 2)
+            ->where('your_circles.0.name', 'Allotment')
+            ->where('your_circles.0.status', ['value' => 'approved', 'label' => 'Approved'])
+            ->where('your_circles.1', [
+                'public_id' => $exchange->public_id,
+                'name' => 'Exchange',
+                'description' => 'Share skills and lend tools.',
+                'location' => null,
+                'members_count' => 1,
+                'status' => ['value' => 'pending', 'label' => 'Waiting for approval'],
+            ]));
+    }
+
+    public function test_guests_have_no_circles_of_their_own(): void
+    {
+        Circle::factory()->create();
+
+        $response = $this->get(route('circles.index'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('your_circles', null));
     }
 
     public function test_lists_24_circles_a_page(): void

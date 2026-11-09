@@ -27,7 +27,8 @@ class CircleController extends Controller
     private const int CIRCLES_PER_PAGE = 24;
 
     /**
-     * List the approved circles in name order, a page at a time, optionally only those whose name contains the search.
+     * List the approved circles, most members first, a page at a time, optionally only those whose name contains the
+     * search.
      */
     public function index(Request $request): Response
     {
@@ -38,12 +39,35 @@ class CircleController extends Controller
                 ->approved()
                 ->withCount('members')
                 ->when($search !== '', fn (Builder $query) => $query->whereLike('name', "%{$search}%"))
+                ->orderByDesc('members_count')
                 ->orderBy('name')
                 ->paginate(self::CIRCLES_PER_PAGE)
                 ->withQueryString()
                 ->through(fn (Circle $circle): array => [...$this->details($circle), 'members_count' => $circle->members_count]),
             'filters' => ['search' => $search],
+            'your_circles' => $this->circlesOf($request->user()),
         ]);
+    }
+
+    /**
+     * Every circle the viewer is in, approved or not, in name order, each with where its approval stands, so they
+     * can find their circles while they wait for approval. Null for guests.
+     *
+     * @return list<array<string, mixed>>|null
+     */
+    private function circlesOf(?User $viewer): ?array
+    {
+        if ($viewer === null) {
+            return null;
+        }
+
+        return $viewer->circles()->with('approval')->withCount('members')->orderBy('name')->get()
+            ->map(fn (Circle $circle): array => [
+                ...$this->details($circle),
+                'members_count' => $circle->members_count,
+                'status' => ['value' => $circle->approval->status->value, 'label' => $circle->approval->status->label()],
+            ])
+            ->all();
     }
 
     /**
