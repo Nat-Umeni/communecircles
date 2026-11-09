@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\DTO\GeoNames\Place;
 use App\Enums\CircleRole;
 use App\Models\Circle;
 use App\Models\User;
@@ -73,5 +74,58 @@ class CircleTest extends TestCase
         $circle->members()->attach(User::factory()->create(), ['role' => CircleRole::Owner]);
 
         $this->assertNull($circle->membershipOf(User::factory()->create()));
+    }
+
+    public function test_has_no_place_until_it_is_moved_to_one(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertNull($circle->place());
+    }
+
+    public function test_keeps_the_place_it_is_moved_to(): void
+    {
+        $totnes = new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843);
+        $circle = Circle::factory()->create();
+
+        $circle->moveTo($totnes);
+        $circle->save();
+
+        $this->assertEquals($totnes, $circle->fresh()->place());
+    }
+
+    public function test_keeps_a_place_with_no_region(): void
+    {
+        $vaduz = new Place(3042030, 'Vaduz', null, 'LI', 'Liechtenstein', 47.14151, 9.52154);
+        $circle = Circle::factory()->create();
+
+        $circle->moveTo($vaduz);
+        $circle->save();
+
+        $this->assertEquals($vaduz, $circle->fresh()->place());
+    }
+
+    public function test_moving_to_no_place_clears_the_location(): void
+    {
+        $circle = Circle::factory()->create();
+        $circle->moveTo(new Place(2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.6843));
+        $circle->save();
+
+        $circle->moveTo(null);
+        $circle->save();
+
+        $circle->refresh();
+        $this->assertNull($circle->place());
+        $this->assertNull($circle->geonames_id);
+        $this->assertNull($circle->latitude);
+    }
+
+    public function test_does_not_let_the_location_be_mass_assigned(): void
+    {
+        $circle = new Circle(['name' => 'Exchange', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'latitude' => 50.43107]);
+
+        $this->assertNull($circle->geonames_id);
+        $this->assertNull($circle->place_name);
+        $this->assertNull($circle->latitude);
     }
 }

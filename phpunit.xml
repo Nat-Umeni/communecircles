@@ -32,5 +32,10 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Tests check the page component and props, so no server-side rendering request to the Vite dev server. -->
+        <env name="INERTIA_SSR_ENABLED" value="false"/>
+        <!-- A made-up account and host, so tests can never use the real GeoNames (requests are faked anyway). -->
+        <env name="GEONAMES_USERNAME" value="commune-test"/>
+        <env name="GEONAMES_BASE_URL" value="https://geonames.test"/>
     </php>
 </phpunit>

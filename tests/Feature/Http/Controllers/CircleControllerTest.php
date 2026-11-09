@@ -2,12 +2,14 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\DTO\GeoNames\Place;
 use App\Enums\CircleRole;
 use App\Enums\Role;
 use App\Models\Circle;
 use App\Models\User;
 use Closure;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -15,6 +17,20 @@ use Tests\TestCase;
 class CircleControllerTest extends TestCase
 {
     use LazilyRefreshDatabase;
+
+    /**
+     * Totnes as GeoNames describes it.
+     */
+    private const array TOTNES = [
+        'geonameId' => 2635610,
+        'name' => 'Totnes',
+        'adminName1' => 'England',
+        'countryCode' => 'GB',
+        'countryName' => 'United Kingdom',
+        'lat' => '50.43107',
+        'lng' => '-3.6843',
+        'fcl' => 'P',
+    ];
 
     public function test_index_renders_the_circles_page(): void
     {
@@ -39,6 +55,7 @@ class CircleControllerTest extends TestCase
                 'name' => 'Exchange',
                 'description' => 'Share skills and lend tools.',
                 'members_count' => 2,
+                'location' => null,
             ]));
     }
 
@@ -64,6 +81,27 @@ class CircleControllerTest extends TestCase
             ->has('circles.data', 1)
             ->where('circles.data.0.name', 'Exchange')
             ->where('filters.search', 'xch'));
+    }
+
+    public function test_lists_where_each_circle_is(): void
+    {
+        Circle::factory()->in($this->totnes())->create();
+
+        $response = $this->get(route('circles.index'));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('circles.data.0.location', $this->totnes()->toArray()));
+    }
+
+    public function test_the_home_page_shows_the_circle_list_too(): void
+    {
+        Circle::factory()->create(['name' => 'Exchange']);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('circles.data.0.name', 'Exchange')
+            ->where('filters.search', ''));
     }
 
     public function test_signed_in_members_can_browse_circles_too(): void
@@ -94,8 +132,18 @@ class CircleControllerTest extends TestCase
                 'name' => 'Exchange',
                 'description' => 'Share skills and lend tools.',
                 'members_count' => 1,
+                'location' => null,
             ])
             ->where('can', ['view_channels' => false, 'request_to_join' => false, 'update' => false, 'delete' => false]));
+    }
+
+    public function test_shows_where_the_circle_is(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+
+        $response = $this->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('circle.location', $this->totnes()->toArray()));
     }
 
     public function test_tells_the_owner_they_can_see_inside_and_manage_their_circle(): void
@@ -200,7 +248,18 @@ class CircleControllerTest extends TestCase
                 'public_id' => $circle->public_id,
                 'name' => 'Exchange',
                 'description' => 'Share skills and lend tools.',
+                'location' => null,
             ]));
+    }
+
+    public function test_gives_the_edit_page_the_circles_place_so_it_can_be_kept_or_changed(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+
+        $response = $this->actingAs($owner)->get(route('circles.edit', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('circle.location', $this->totnes()->toArray()));
     }
 
     public function test_plain_members_cannot_open_the_edit_page(): void
@@ -227,6 +286,61 @@ class CircleControllerTest extends TestCase
         $circle->refresh();
         $this->assertSame('Tool library', $circle->name);
         $this->assertSame('Borrow tools from your neighbours.', $circle->description);
+    }
+
+    public function test_stores_the_circle_at_the_chosen_place(): void
+    {
+        Http::fake(['geonames.test/getJSON*' => Http::response(self::TOTNES)]);
+
+        $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), [
+            'name' => 'Exchange',
+            'description' => 'Share skills and lend tools.',
+            'geonames_id' => 2635610,
+        ]);
+
+        $this->assertEquals($this->totnes(), Circle::sole()->place());
+    }
+
+    public function test_moves_the_circle_to_a_newly_chosen_place(): void
+    {
+        Http::fake(['geonames.test/getJSON*' => Http::response(self::TOTNES)]);
+        $circle = Circle::factory()->in(new Place(2651513, 'Dartington', 'England', 'GB', 'United Kingdom', 50.45, -3.7))->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), [
+            'name' => $circle->name,
+            'description' => $circle->description,
+            'geonames_id' => 2635610,
+        ]);
+
+        $this->assertEquals($this->totnes(), $circle->fresh()->place());
+    }
+
+    public function test_keeps_the_circles_place_when_the_same_one_is_sent_back(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), [
+            'name' => 'Tool library',
+            'description' => $circle->description,
+            'geonames_id' => 2635610,
+        ]);
+
+        $circle->refresh();
+        $this->assertSame('Tool library', $circle->name);
+        $this->assertEquals($this->totnes(), $circle->place());
+    }
+
+    public function test_clears_the_circles_place_when_none_is_chosen(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), [
+            'name' => $circle->name,
+            'description' => $circle->description,
+            'geonames_id' => null,
+        ]);
+
+        $this->assertNull($circle->fresh()->place());
     }
 
     public function test_staff_delete_the_circle_and_go_back_to_the_list(): void
@@ -265,6 +379,14 @@ class CircleControllerTest extends TestCase
             'updating' => ['put', fn (Circle $circle): string => route('circles.update', $circle)],
             'deleting' => ['delete', fn (Circle $circle): string => route('circles.destroy', $circle)],
         ];
+    }
+
+    /**
+     * Totnes, as a GeoNames place.
+     */
+    private function totnes(): Place
+    {
+        return Place::fromGeoNames(self::TOTNES);
     }
 
     /**

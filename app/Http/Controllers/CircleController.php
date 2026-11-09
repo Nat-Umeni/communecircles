@@ -33,7 +33,7 @@ class CircleController extends Controller
                 ->orderBy('name')
                 ->paginate(self::CIRCLES_PER_PAGE)
                 ->withQueryString()
-                ->through(fn (Circle $circle): array => $circle->only('public_id', 'name', 'description', 'members_count')),
+                ->through(fn (Circle $circle): array => [...$this->details($circle), 'members_count' => $circle->members_count]),
             'filters' => ['search' => $search],
         ]);
     }
@@ -56,7 +56,9 @@ class CircleController extends Controller
     public function store(StoreCircleRequest $request): RedirectResponse
     {
         $circle = DB::transaction(function () use ($request): Circle {
-            $circle = Circle::create($request->validated());
+            $circle = new Circle($request->safe()->only(['name', 'description']));
+            $circle->moveTo($request->place());
+            $circle->save();
             $circle->members()->attach($request->user(), ['role' => CircleRole::Owner]);
 
             return $circle;
@@ -71,7 +73,7 @@ class CircleController extends Controller
     public function show(Circle $circle): Response
     {
         return Inertia::render('circles/Show', [
-            'circle' => $circle->loadCount('members')->only('public_id', 'name', 'description', 'members_count'),
+            'circle' => [...$this->details($circle), 'members_count' => $circle->loadCount('members')->members_count],
             'can' => [
                 'view_channels' => Gate::allows('viewChannels', $circle),
                 'request_to_join' => Gate::allows('requestToJoin', $circle),
@@ -89,16 +91,22 @@ class CircleController extends Controller
         Gate::authorize('update', $circle);
 
         return Inertia::render('circles/Edit', [
-            'circle' => $circle->only('public_id', 'name', 'description'),
+            'circle' => $this->details($circle),
         ]);
     }
 
     /**
-     * Save the circle's new details, then open it.
+     * Save the circle's new details, and its place if a different one was chosen, then open it.
      */
     public function update(UpdateCircleRequest $request, Circle $circle): RedirectResponse
     {
-        $circle->update($request->validated());
+        $circle->fill($request->safe()->only(['name', 'description']));
+
+        if ($request->placeChanged()) {
+            $circle->moveTo($request->place());
+        }
+
+        $circle->save();
 
         return to_route('circles.show', $circle);
     }
@@ -111,5 +119,18 @@ class CircleController extends Controller
         $circle->delete();
 
         return to_route('circles.index');
+    }
+
+    /**
+     * What the pages show about a circle, with its location (or null) for the place name and the explore map.
+     *
+     * @return array{public_id: string, name: string, description: string, location: array<string, mixed>|null}
+     */
+    private function details(Circle $circle): array
+    {
+        return [
+            ...$circle->only('public_id', 'name', 'description'),
+            'location' => $circle->place()?->toArray(),
+        ];
     }
 }

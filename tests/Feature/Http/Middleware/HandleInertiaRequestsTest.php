@@ -4,11 +4,14 @@ namespace Tests\Feature\Http\Middleware;
 
 use App\Enums\Role;
 use App\Models\User;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class HandleInertiaRequestsTest extends TestCase
 {
+    use LazilyRefreshDatabase;
+
     public function test_shares_the_current_locale_and_the_available_languages(): void
     {
         $response = $this->get(route('home'));

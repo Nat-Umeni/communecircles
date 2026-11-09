@@ -5,11 +5,12 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CircleController;
-use App\Http\Controllers\HomeController;
+use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\StyleguideController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+// NOTE: the home page shows the circle list too, until there's a dashboard for it.
+Route::get('/', [CircleController::class, 'index'])->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', [RegisterController::class, 'create'])->name('auth.register.create');
@@ -32,6 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])->name('verification.send')->middleware('throttle:auth');
 
     Route::resource('circles', CircleController::class)->except(['index', 'show']);
+
+    // GeoNames' free account allows 1,000 requests an hour, so each member gets 30 place searches a minute.
+    Route::get('/places', PlaceController::class)->name('places.search')->middleware('throttle:30,1');
 });
 
 // NOTE: open to guests and members alike, and registered after the group above so /circles/create
