@@ -46,6 +46,20 @@ describe('AppHeader', () => {
         expect(wrapper.get('header [data-action]').text()).toBe('Edit');
     });
 
+    it("adds the page's own items to the Create menu", async () => {
+        signIn();
+        const wrapper = mount(AppHeader, {
+            props: { sidebarOpen: false },
+            slots: { create: '<button type="button" role="menuitem">Invite someone</button>' },
+            attachTo: document.body,
+        });
+
+        await wrapper.get('[aria-label="Create"]').trigger('click');
+
+        expect(wrapper.findAll('[role="menuitem"]').map((item) => item.text())).toEqual(['Create a circle', 'Invite someone']);
+        wrapper.unmount();
+    });
+
     it('has no Create menu for guests', () => {
         const wrapper = mount(AppHeader, { props: { sidebarOpen: false } });
 

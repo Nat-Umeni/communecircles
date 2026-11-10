@@ -65,6 +65,15 @@ class Approval extends Model
     }
 
     /**
+     * Take it back while it's still waiting, e.g. an invite that whoever runs the thing no longer wants to send.
+     */
+    public function cancel(User $by): void
+    {
+        $this->decide(ApprovalStatus::Cancelled, $by);
+        $this->log(AuditEvent::Cancelled, $by);
+    }
+
+    /**
      * The thing waiting for approval. Ask it through the Approvable contract; never assume what it is.
      *
      * @return MorphTo<Approvable&Model, $this>

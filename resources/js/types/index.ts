@@ -67,7 +67,7 @@ export interface CircleSummary extends CircleDetails {
  * Where an approval stands: the value of App\Enums\ApprovalStatus, with its label.
  */
 export interface ApprovalStatus {
-    value: 'pending' | 'approved' | 'rejected';
+    value: 'pending' | 'approved' | 'rejected' | 'cancelled';
     label: string;
 }
 
@@ -115,6 +115,8 @@ export interface JoinRequest {
 export interface Invite {
     id: number;
     invited_by: string | null;
+    /** True once the circle's owners and admins withdrew it; the person invited is only told it expired. */
+    expired: boolean;
 }
 
 /**

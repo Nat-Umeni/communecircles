@@ -37,6 +37,8 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
                     <CirclePlus class="size-4" aria-hidden="true" />
                     Create a circle
                 </MenuItem>
+                <!-- The page's own MenuItems, e.g. inviting someone into the circle being viewed. -->
+                <slot name="create" />
             </DropdownMenu>
 
             <div class="hidden sm:block">

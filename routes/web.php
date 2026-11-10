@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/approvals', [ApprovalController::class, 'index'])->name('approvals.index');
     Route::post('/approvals/{approval}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
     Route::post('/approvals/{approval}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');
+    Route::post('/approvals/{approval}/cancel', [ApprovalController::class, 'cancel'])->name('approvals.cancel');
 });
 
 // NOTE: open to guests and members alike, and registered after the group above so /circles/create

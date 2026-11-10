@@ -44,21 +44,22 @@ class ApprovalTypeTest extends TestCase
     }
 
     #[DataProvider('messages')]
-    public function test_says_what_happened_after_each_decision(ApprovalType $type, string $approved, string $rejected): void
+    public function test_says_what_happened_after_each_decision(ApprovalType $type, string $approved, string $rejected, string $cancelled): void
     {
         $this->assertSame($approved, $type->approvedMessage());
         $this->assertSame($rejected, $type->rejectedMessage());
+        $this->assertSame($cancelled, $type->cancelledMessage());
     }
 
     /**
-     * @return array<string, array{ApprovalType, string, string}>
+     * @return array<string, array{ApprovalType, string, string, string}>
      */
     public static function messages(): array
     {
         return [
-            'a new circle' => [ApprovalType::NewCircle, 'Circle approved.', 'Circle rejected.'],
-            'a request to join' => [ApprovalType::JoinRequest, 'Request accepted.', 'Request declined.'],
-            'an invite' => [ApprovalType::Invite, "You've joined the circle.", 'Invite declined.'],
+            'a new circle' => [ApprovalType::NewCircle, 'Circle approved.', 'Circle rejected.', 'Circle withdrawn.'],
+            'a request to join' => [ApprovalType::JoinRequest, 'Request accepted.', 'Request declined.', 'Request withdrawn.'],
+            'an invite' => [ApprovalType::Invite, "You've joined the circle.", 'Invite declined.', 'Invite cancelled.'],
         ];
     }
 

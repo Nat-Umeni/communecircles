@@ -148,15 +148,16 @@ class CircleController extends Controller
     }
 
     /**
-     * The viewer's own invite into the circle, still waiting for them to accept or decline, with who sent it; null
-     * when they have none.
+     * The viewer's own invite into the circle, with who sent it: one still waiting for them to accept or decline, or
+     * one its owners and admins cancelled, which they're only told has expired. Null when they have neither, or are
+     * in the circle already (e.g. they asked to join after their invite was cancelled).
      *
-     * @return array{id: int, invited_by: string|null}|null
+     * @return array{id: int, invited_by: string|null, expired: bool}|null
      */
     private function inviteFor(Circle $circle, ?User $viewer): ?array
     {
-        $invite = $viewer === null ? null : $circle->approvals()
-            ->pending()
+        $invite = $viewer === null || $circle->membershipOf($viewer) !== null ? null : $circle->approvals()
+            ->whereIn('status', [ApprovalStatus::Pending, ApprovalStatus::Cancelled])
             ->where('type', ApprovalType::Invite)
             ->where('user_id', $viewer->id)
             ->with('requester')
@@ -165,6 +166,7 @@ class CircleController extends Controller
         return $invite === null ? null : [
             'id' => $invite->id,
             'invited_by' => $invite->requester === null ? null : "{$invite->requester->first_name} {$invite->requester->last_name}",
+            'expired' => $invite->status === ApprovalStatus::Cancelled,
         ];
     }
 

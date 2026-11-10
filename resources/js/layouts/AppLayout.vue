@@ -15,6 +15,9 @@ const sidebarOpen = ref(false);
             <template #actions>
                 <slot name="actions" />
             </template>
+            <template #create>
+                <slot name="create" />
+            </template>
         </AppHeader>
 
         <div class="flex">

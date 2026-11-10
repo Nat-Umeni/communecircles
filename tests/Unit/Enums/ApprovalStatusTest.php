@@ -23,6 +23,7 @@ class ApprovalStatusTest extends TestCase
             'pending' => [ApprovalStatus::Pending, 'Waiting for approval'],
             'approved' => [ApprovalStatus::Approved, 'Approved'],
             'rejected' => [ApprovalStatus::Rejected, 'Not approved'],
+            'cancelled' => [ApprovalStatus::Cancelled, 'Cancelled'],
         ];
     }
 }

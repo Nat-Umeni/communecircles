@@ -135,6 +135,30 @@ class ApprovalControllerTest extends TestCase
         $this->assertSame(ApprovalStatus::Pending, $circle->approval->fresh()->status);
     }
 
+    public function test_a_circles_admin_cancels_a_waiting_invite_and_goes_back(): void
+    {
+        $circle = Circle::factory()->create();
+        $invite = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Admin))->from(route('circles.show', $circle))
+            ->post(route('approvals.cancel', $invite));
+
+        $response->assertRedirect(route('circles.show', $circle));
+        $response->assertInertiaFlash('status', 'Invite cancelled.');
+        $this->assertSame(ApprovalStatus::Cancelled, $invite->fresh()->status);
+    }
+
+    public function test_someone_who_cannot_cancel_an_invite_is_refused(): void
+    {
+        $circle = Circle::factory()->create();
+        $invite = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Member))->post(route('approvals.cancel', $invite));
+
+        $response->assertForbidden();
+        $this->assertSame(ApprovalStatus::Pending, $invite->fresh()->status);
+    }
+
     /**
      * @param  Closure(Approval): string  $url
      */
@@ -157,6 +181,7 @@ class ApprovalControllerTest extends TestCase
             'the queue' => ['get', fn (): string => route('approvals.index')],
             'approving' => ['post', fn (Approval $approval): string => route('approvals.approve', $approval)],
             'rejecting' => ['post', fn (Approval $approval): string => route('approvals.reject', $approval)],
+            'cancelling' => ['post', fn (Approval $approval): string => route('approvals.cancel', $approval)],
         ];
     }
 

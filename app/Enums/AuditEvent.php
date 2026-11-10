@@ -11,4 +11,5 @@ enum AuditEvent: string
     case ApprovalRequested = 'approval_requested';
     case Approved = 'approved';
     case Rejected = 'rejected';
+    case Cancelled = 'cancelled';
 }

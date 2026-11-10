@@ -402,7 +402,36 @@ class CircleControllerTest extends TestCase
 
         $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace']));
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace', 'expired' => false]));
+    }
+
+    public function test_shows_someone_whose_invite_was_cancelled_that_it_expired_and_lets_them_ask_to_join(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+        $circle->members()->attach($owner, ['role' => CircleRole::Owner]);
+        $invitee = User::factory()->create();
+        $invite = Approval::open(ApprovalType::Invite, $circle, $invitee, $owner);
+        $invite->cancel($owner);
+
+        $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace', 'expired' => true])
+            ->where('can.request_to_join', true));
+    }
+
+    public function test_a_member_whose_old_invite_was_cancelled_sees_no_invite(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $member = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $member, $owner)->cancel($owner);
+        $circle->members()->attach($member, ['role' => CircleRole::Member]);
+
+        $response = $this->actingAs($member)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite', null));
     }
 
     public function test_shows_no_sender_for_an_invite_from_an_account_since_deleted(): void

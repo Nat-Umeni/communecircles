@@ -19,6 +19,16 @@ describe('AppLayout', () => {
         expect(wrapper.find('main [data-action]').exists()).toBe(false);
     });
 
+    it("puts the page's own items in the header's Create menu", async () => {
+        signIn();
+        const wrapper = mount(AppLayout, { slots: { create: '<button type="button" role="menuitem">Invite someone</button>' }, attachTo: document.body });
+
+        await wrapper.get('[aria-label="Create"]').trigger('click');
+
+        expect(wrapper.get('header [role="menu"]').text()).toContain('Invite someone');
+        wrapper.unmount();
+    });
+
     it('opens the sidebar from the header and closes it again from the sidebar', async () => {
         const wrapper = mount(AppLayout);
         const aside = () => wrapper.get('aside');

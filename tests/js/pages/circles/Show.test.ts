@@ -1,8 +1,9 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
+import CancelInvite from '@/components/circles/CancelInvite.vue';
 import DeleteCircle from '@/components/circles/DeleteCircle.vue';
-import InviteForm from '@/components/circles/InviteForm.vue';
+import InviteDialog from '@/components/circles/InviteDialog.vue';
 import MembersTable from '@/components/circles/MembersTable.vue';
 import CountPill from '@/components/ui/CountPill.vue';
 import Show from '@/pages/circles/Show.vue';
@@ -37,10 +38,20 @@ interface ShowProps {
 /**
  * The circle's page as CircleController::show sends it; by default to a viewer who can do nothing but look.
  */
-function show(props: Partial<ShowProps> = {}): VueWrapper {
+function show(props: Partial<ShowProps> = {}, attachTo?: HTMLElement): VueWrapper {
     return mount(Show, {
         props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, ...props },
+        attachTo,
     });
+}
+
+/**
+ * The items in the header's Create menu, opened.
+ */
+async function createMenu(wrapper: VueWrapper): Promise<string[]> {
+    await wrapper.get('[aria-label="Create"]').trigger('click');
+
+    return wrapper.findAll('[role="menuitem"]').map((item) => item.text());
 }
 
 function decisions(wrapper: VueWrapper): unknown[] {
@@ -145,11 +156,21 @@ describe('circles/Show', () => {
 
     it('lets someone who was invited accept or decline', () => {
         signIn();
-        const wrapper = show({ invite: { id: 9, invited_by: 'Ada Lovelace' } });
+        const wrapper = show({ invite: { id: 9, invited_by: 'Ada Lovelace', expired: false } });
 
         expect(wrapper.text()).toContain('Ada Lovelace invited you to join this circle.');
         expect(decisions(wrapper)).toEqual([{ approval: 9, subject: 'the invite', approveLabel: 'Accept', rejectLabel: 'Decline' }]);
-        expect(show({ invite: { id: 9, invited_by: null } }).text()).toContain("You've been invited to join this circle.");
+        expect(show({ invite: { id: 9, invited_by: null, expired: false } }).text()).toContain("You've been invited to join this circle.");
+    });
+
+    it('tells someone whose invite was withdrawn only that it expired', () => {
+        signIn();
+        const wrapper = show({ invite: { id: 9, invited_by: 'Ada Lovelace', expired: true } });
+
+        expect(wrapper.text()).toContain('This invite has expired');
+        expect(wrapper.text()).not.toContain('invited you to join');
+        expect(wrapper.text()).not.toMatch(/cancel/i);
+        expect(decisions(wrapper)).toEqual([]);
     });
 
     it("lists the requests to join for the circle's owners and admins to decide", () => {
@@ -163,17 +184,50 @@ describe('circles/Show', () => {
         expect(show({ pending_join_requests: [] }).get('[data-join-requests]').text()).toContain('No one is waiting to join.');
     });
 
-    it("lets the circle's owners and admins invite people, and lists who hasn't answered", () => {
+    it("lets the circle's owners and admins invite someone from the header's Create menu", async () => {
         signIn();
-        const wrapper = show({
-            can: { ...nothing, invite: true },
-            pending_invites: [{ id: 4, name: 'Alan Turing', invited_at: '2026-11-07T09:00:00+00:00' }],
-        });
+        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: [] }, document.body);
+        const dialog = () => wrapper.getComponent(InviteDialog);
+
+        expect(dialog().props()).toEqual({ circle: 'abc123', open: false });
+        expect(await createMenu(wrapper)).toEqual(['Create a circle', 'Invite someone']);
+        expect(wrapper.findAll('[role="menuitem"]')[1].find('svg').exists()).toBe(true);
+
+        await wrapper.findAll('[role="menuitem"]')[1].trigger('click');
+
+        expect(dialog().props('open')).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('opens the invite dialog again from the menu after it closed itself', async () => {
+        signIn();
+        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: [] }, document.body);
+        const dialog = () => wrapper.getComponent(InviteDialog);
+
+        await createMenu(wrapper);
+        await wrapper.findAll('[role="menuitem"]')[1].trigger('click');
+        dialog().vm.$emit('update:open', false);
+        await wrapper.vm.$nextTick();
+
+        expect(dialog().props('open')).toBe(false);
+
+        await createMenu(wrapper);
+        await wrapper.findAll('[role="menuitem"]')[1].trigger('click');
+
+        expect(dialog().props('open')).toBe(true);
+        wrapper.unmount();
+    });
+
+    it("lists the invites waiting for an answer, for the circle's owners and admins to cancel", () => {
+        signIn();
+        const wrapper = show({ pending_invites: [{ id: 4, name: 'Alan Turing', invited_at: '2026-11-07T09:00:00+00:00' }] });
         const invited = wrapper.get('[data-invites] li');
 
-        expect(wrapper.getComponent(InviteForm).props('circle')).toBe('abc123');
+        expect(wrapper.get('[data-invites] h3').text()).toBe('Invites');
         expect(invited.text()).toContain('Alan Turing');
         expect(invited.get('time').attributes('datetime')).toBe('2026-11-07T09:00:00+00:00');
+        expect(invited.getComponent(CancelInvite).props()).toEqual({ invite: 4, name: 'Alan Turing' });
+        expect(show({ pending_invites: [] }).get('[data-invites]').text()).toContain('No invites are waiting for an answer.');
     });
 
     it("doesn't offer anything more to a member who can only look", () => {
@@ -185,7 +239,7 @@ describe('circles/Show', () => {
         expect(links(wrapper).map(([label]) => label)).not.toContain('Log in to ask to join');
         expect(wrapper.findComponent(DeleteCircle).exists()).toBe(false);
         expect(decisions(wrapper)).toEqual([]);
-        expect(wrapper.findComponent(InviteForm).exists()).toBe(false);
+        expect(wrapper.findComponent(InviteDialog).exists()).toBe(false);
         expect(wrapper.find('[data-approval]').exists()).toBe(false);
         expect(wrapper.find('[data-join-request]').exists()).toBe(false);
         expect(wrapper.find('[data-join-requests]').exists()).toBe(false);
@@ -207,10 +261,14 @@ describe('circles/Show', () => {
         expect(wrapper.get('[data-approval]').text()).not.toContain('Edit the circle');
     });
 
-    it("doesn't offer to invite people until the circle can take them", () => {
+    it("doesn't offer to invite people until the circle can take them", async () => {
         signIn();
+        const wrapper = show({ approval: waiting, pending_invites: [] }, document.body);
 
-        expect(show({ approval: waiting, pending_invites: [] }).find('[data-invites]').exists()).toBe(false);
+        expect(wrapper.find('[data-invites]').exists()).toBe(true);
+        expect(wrapper.findComponent(InviteDialog).exists()).toBe(false);
+        expect(await createMenu(wrapper)).toEqual(['Create a circle']);
+        wrapper.unmount();
     });
 
     it('shows members where the channels will be', () => {

@@ -50,6 +50,18 @@ enum ApprovalType: string
     }
 
     /**
+     * What to tell whoever just cancelled it while it was still waiting.
+     */
+    public function cancelledMessage(): string
+    {
+        return match ($this) {
+            self::NewCircle => 'Circle withdrawn.',
+            self::JoinRequest => 'Request withdrawn.',
+            self::Invite => 'Invite cancelled.',
+        };
+    }
+
+    /**
      * Whether staff decide it (anything new waiting to be let in), so it waits in their queue. The others are decided
      * by whoever runs the thing, or by the person it's about.
      */

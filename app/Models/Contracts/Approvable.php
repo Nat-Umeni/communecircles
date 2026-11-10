@@ -24,8 +24,8 @@ interface Approvable
     public function whenApproved(Approval $approval): void;
 
     /**
-     * Whether the user runs it, and so decides who joins it. Approval rules ask this rather than assuming what the
-     * thing is.
+     * Whether the user runs it, and so decides who joins it and can take back its invites. Approval rules ask this
+     * rather than assuming what the thing is.
      */
     public function managedBy(User $user): bool;
 

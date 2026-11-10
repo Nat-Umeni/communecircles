@@ -30,6 +30,19 @@ class StoreInviteRequestTest extends TestCase
         $this->assertSame(ApprovalStatus::Pending, $circle->approvals()->where('type', ApprovalType::Invite)->sole()->status);
     }
 
+    public function test_someone_whose_invite_was_cancelled_can_be_invited_again(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->ownerOf($circle);
+        $invitee = User::factory()->create(['email' => 'ada@example.com']);
+        Approval::open(ApprovalType::Invite, $circle, $invitee, $owner)->cancel($owner);
+
+        $response = $this->actingAs($owner)->post(route('circles.invites.store', $circle), ['email' => 'ada@example.com']);
+
+        $response->assertValid();
+        $this->assertSame(ApprovalStatus::Pending, $circle->approvals()->where('type', ApprovalType::Invite)->sole()->status);
+    }
+
     /**
      * @param  array<string, mixed>  $details
      */

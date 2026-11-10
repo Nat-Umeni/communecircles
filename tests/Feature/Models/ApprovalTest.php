@@ -125,6 +125,29 @@ class ApprovalTest extends TestCase
         $this->assertNull($circle->approval->fresh()->reason);
     }
 
+    public function test_cancelling_records_who_took_it_back_and_when_and_logs_it(): void
+    {
+        $this->freezeSecond();
+        $circle = Circle::factory()->create();
+        $owner = User::factory()->create();
+        $circle->members()->attach($owner, ['role' => CircleRole::Owner]);
+        $invite = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+
+        $invite->cancel($owner);
+
+        $invite = $invite->fresh();
+        $this->assertSame(ApprovalStatus::Cancelled, $invite->status);
+        $this->assertTrue($invite->decider->is($owner));
+        $this->assertTrue($invite->decided_at->equalTo(now()));
+        $this->assertNull($invite->reason);
+
+        $activity = $this->lastActivity();
+        $this->assertSame(AuditEvent::Cancelled->value, $activity->event);
+        $this->assertTrue($activity->causer->is($owner));
+        $this->assertTrue($activity->subject->is($circle));
+        $this->assertSame('invite', $activity->getProperty('type'));
+    }
+
     public function test_asking_again_after_a_rejection_reopens_the_same_approval(): void
     {
         $circle = Circle::factory()->create();

@@ -65,4 +65,18 @@ class ApprovalController extends Controller
 
         return back();
     }
+
+    /**
+     * Take it back while it's still waiting (only invites, so far), then go back.
+     */
+    public function cancel(Request $request, Approval $approval): RedirectResponse
+    {
+        Gate::authorize('cancel', $approval);
+
+        $approval->cancel($request->user());
+
+        Inertia::flash('status', $approval->type->cancelledMessage());
+
+        return back();
+    }
 }

@@ -99,6 +99,90 @@ class ApprovalPolicyTest extends TestCase
         $this->assertFalse(User::factory()->create(['role' => Role::SuperAdmin])->can('decide', $circle->approval));
     }
 
+    /**
+     * @param  'Owner'|'Admin'  $role
+     */
+    #[DataProvider('managerRoleNames')]
+    public function test_any_of_the_circles_owners_and_admins_can_cancel_a_waiting_invite(string $role): void
+    {
+        $circle = Circle::factory()->create();
+        $invite = $this->inviteTo($circle);
+
+        $this->assertTrue($this->memberOf($circle, constant(CircleRole::class.'::'.$role))->can('cancel', $invite));
+    }
+
+    public function test_a_plain_member_cannot_cancel_an_invite(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($this->memberOf($circle, CircleRole::Member)->can('cancel', $this->inviteTo($circle)));
+    }
+
+    public function test_the_person_invited_cannot_cancel_their_invite_but_declines_it_instead(): void
+    {
+        $invite = $this->inviteTo(Circle::factory()->create());
+
+        $this->assertFalse($invite->user->can('cancel', $invite));
+    }
+
+    public function test_staff_cannot_cancel_an_invite(): void
+    {
+        $invite = $this->inviteTo(Circle::factory()->create());
+
+        $this->assertFalse(User::factory()->create(['role' => Role::SuperAdmin])->can('cancel', $invite));
+    }
+
+    public function test_an_owner_of_another_circle_cannot_cancel_this_ones_invites(): void
+    {
+        $invite = $this->inviteTo(Circle::factory()->create());
+
+        $this->assertFalse($this->memberOf(Circle::factory()->create(), CircleRole::Owner)->can('cancel', $invite));
+    }
+
+    /**
+     * @param  Closure(Approval, User): void  $answer
+     */
+    #[DataProvider('answered')]
+    public function test_nobody_can_cancel_an_invite_once_it_is_answered_or_cancelled(Closure $answer): void
+    {
+        $circle = Circle::factory()->create();
+        $invite = $this->inviteTo($circle);
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $answer($invite, $owner);
+
+        $this->assertFalse($owner->can('cancel', $invite->fresh()));
+    }
+
+    /**
+     * @return array<string, array{Closure(Approval, User): void}>
+     */
+    public static function answered(): array
+    {
+        return [
+            'accepted' => [fn (Approval $invite): mixed => $invite->approve($invite->user)],
+            'declined' => [fn (Approval $invite): mixed => $invite->reject($invite->user)],
+            'cancelled' => [fn (Approval $invite, User $owner): mixed => $invite->cancel($owner)],
+        ];
+    }
+
+    public function test_only_invites_can_be_cancelled_not_requests_to_join_or_new_circles(): void
+    {
+        $circle = Circle::factory()->pending()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+
+        $this->assertFalse($owner->can('cancel', $this->joinRequestFor($circle)));
+        $this->assertFalse($owner->can('cancel', $circle->approval));
+    }
+
+    public function test_the_person_invited_cannot_accept_or_decline_once_it_is_cancelled(): void
+    {
+        $circle = Circle::factory()->create();
+        $invite = $this->inviteTo($circle);
+        $invite->cancel($this->memberOf($circle, CircleRole::Owner));
+
+        $this->assertFalse($invite->user->can('decide', $invite->fresh()));
+    }
+
     public function test_decides_on_a_request_to_join_by_asking_the_thing_being_joined_who_runs_it(): void
     {
         $runner = User::factory()->create();
@@ -106,6 +190,26 @@ class ApprovalPolicyTest extends TestCase
 
         $this->assertTrue($runner->can('decide', $request));
         $this->assertFalse(User::factory()->create()->can('decide', $request));
+    }
+
+    public function test_cancels_an_invite_by_asking_the_thing_invited_into_who_runs_it(): void
+    {
+        $runner = User::factory()->create();
+        $invite = $this->approvalAbout($this->somethingRunBy($runner), ApprovalType::Invite);
+
+        $this->assertTrue($runner->can('cancel', $invite));
+        $this->assertFalse(User::factory()->create()->can('cancel', $invite));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function managerRoleNames(): array
+    {
+        return [
+            'owner' => ['Owner'],
+            'admin' => ['Admin'],
+        ];
     }
 
     /**
@@ -182,6 +286,25 @@ class ApprovalPolicyTest extends TestCase
         $approval = new Approval(['type' => $type, 'user_id' => User::factory()->create()->id, 'status' => ApprovalStatus::Pending]);
 
         return $approval->setRelation('approvable', $thing);
+    }
+
+    /**
+     * A new user invited into the circle by one of its owners.
+     */
+    private function inviteTo(Circle $circle): Approval
+    {
+        return Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
+    }
+
+    /**
+     * A new user who belongs to the circle with the given role.
+     */
+    private function memberOf(Circle $circle, CircleRole $role): User
+    {
+        $user = User::factory()->create();
+        $circle->members()->attach($user, ['role' => $role]);
+
+        return $user;
     }
 
     /**

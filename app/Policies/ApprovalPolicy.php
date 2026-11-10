@@ -37,4 +37,17 @@ class ApprovalPolicy
             ApprovalType::Invite => $approval->user->is($user),
         };
     }
+
+    /**
+     * Determine whether the user can cancel it while it's still waiting: only an invite, by anyone who runs what they
+     * were invited into (its managedBy()), not just whoever sent it.
+     */
+    public function cancel(User $user, Approval $approval): bool
+    {
+        if ($approval->status !== ApprovalStatus::Pending || $approval->type !== ApprovalType::Invite) {
+            return false;
+        }
+
+        return $approval->approvable->managedBy($user);
+    }
 }
