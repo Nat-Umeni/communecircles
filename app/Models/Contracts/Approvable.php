@@ -3,6 +3,7 @@
 namespace App\Models\Contracts;
 
 use App\Models\Approval;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -21,6 +22,12 @@ interface Approvable
      * What happens once one of its approvals is approved, e.g. letting in the person who asked to join.
      */
     public function whenApproved(Approval $approval): void;
+
+    /**
+     * Whether the user runs it, and so decides who joins it. Approval rules ask this rather than assuming what the
+     * thing is.
+     */
+    public function managedBy(User $user): bool;
 
     /**
      * What it is, for whoever decides on one of its approvals: its name, a line about it, and where to see it.

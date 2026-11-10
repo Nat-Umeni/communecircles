@@ -6,6 +6,7 @@ use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
+use App\Enums\Role;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
@@ -92,6 +93,46 @@ class CircleTest extends TestCase
         $circle->members()->attach(User::factory()->create(), ['role' => CircleRole::Owner]);
 
         $this->assertNull($circle->membershipOf(User::factory()->create()));
+    }
+
+    #[DataProvider('managerRoles')]
+    public function test_is_managed_by_its_owners_and_admins(CircleRole $role): void
+    {
+        $circle = Circle::factory()->create();
+        $manager = User::factory()->create();
+        $circle->members()->attach($manager, ['role' => $role]);
+
+        $this->assertTrue($circle->managedBy($manager));
+    }
+
+    public function test_is_not_managed_by_a_plain_member(): void
+    {
+        $circle = Circle::factory()->create();
+        $member = User::factory()->create();
+        $circle->members()->attach($member, ['role' => CircleRole::Member]);
+
+        $this->assertFalse($circle->managedBy($member));
+    }
+
+    public function test_is_not_managed_by_an_owner_of_another_circle_or_by_staff(): void
+    {
+        $circle = Circle::factory()->create();
+        $otherOwner = User::factory()->create();
+        Circle::factory()->create()->members()->attach($otherOwner, ['role' => CircleRole::Owner]);
+
+        $this->assertFalse($circle->managedBy($otherOwner));
+        $this->assertFalse($circle->managedBy(User::factory()->create(['role' => Role::SuperAdmin])));
+    }
+
+    /**
+     * @return array<string, array{CircleRole}>
+     */
+    public static function managerRoles(): array
+    {
+        return [
+            'owner' => [CircleRole::Owner],
+            'admin' => [CircleRole::Admin],
+        ];
     }
 
     public function test_is_approved_only_once_staff_have_approved_it(): void

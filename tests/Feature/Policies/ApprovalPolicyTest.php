@@ -2,13 +2,17 @@
 
 namespace Tests\Feature\Policies;
 
+use App\Enums\ApprovalStatus;
 use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
 use App\Enums\Role;
 use App\Models\Approval;
 use App\Models\Circle;
+use App\Models\Contracts\Approvable;
 use App\Models\User;
 use Closure;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -95,6 +99,15 @@ class ApprovalPolicyTest extends TestCase
         $this->assertFalse(User::factory()->create(['role' => Role::SuperAdmin])->can('decide', $circle->approval));
     }
 
+    public function test_decides_on_a_request_to_join_by_asking_the_thing_being_joined_who_runs_it(): void
+    {
+        $runner = User::factory()->create();
+        $request = $this->approvalAbout($this->somethingRunBy($runner), ApprovalType::JoinRequest);
+
+        $this->assertTrue($runner->can('decide', $request));
+        $this->assertFalse(User::factory()->create()->can('decide', $request));
+    }
+
     /**
      * @return array<string, array{Role, bool}>
      */
@@ -128,6 +141,47 @@ class ApprovalPolicyTest extends TestCase
             'approved' => [fn (): Circle => Circle::factory()->create()],
             'rejected' => [fn (): Circle => Circle::factory()->rejected()->create()],
         ];
+    }
+
+    /**
+     * Something waiting for approval that isn't a circle, run by the given user, so the rules can't lean on circles.
+     */
+    private function somethingRunBy(User $runner): Approvable&Model
+    {
+        $thing = new class extends Model implements Approvable
+        {
+            public ?User $runner = null;
+
+            public function approvals(): MorphMany
+            {
+                return $this->morphMany(Approval::class, 'approvable');
+            }
+
+            public function whenApproved(Approval $approval): void {}
+
+            public function approvalSummary(): array
+            {
+                return ['name' => 'Something', 'description' => 'Not a circle.', 'url' => '/'];
+            }
+
+            public function managedBy(User $user): bool
+            {
+                return $this->runner?->is($user) ?? false;
+            }
+        };
+        $thing->runner = $runner;
+
+        return $thing;
+    }
+
+    /**
+     * A waiting approval of the given type about the thing, for a new user.
+     */
+    private function approvalAbout(Approvable&Model $thing, ApprovalType $type): Approval
+    {
+        $approval = new Approval(['type' => $type, 'user_id' => User::factory()->create()->id, 'status' => ApprovalStatus::Pending]);
+
+        return $approval->setRelation('approvable', $thing);
     }
 
     /**

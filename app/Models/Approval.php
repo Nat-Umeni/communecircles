@@ -65,7 +65,9 @@ class Approval extends Model
     }
 
     /**
-     * @return MorphTo<Model, $this>
+     * The thing waiting for approval. Ask it through the Approvable contract; never assume what it is.
+     *
+     * @return MorphTo<Approvable&Model, $this>
      */
     public function approvable(): MorphTo
     {

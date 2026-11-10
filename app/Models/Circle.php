@@ -70,6 +70,14 @@ class Circle extends Model implements Approvable
     }
 
     /**
+     * Its owners and admins run it.
+     */
+    public function managedBy(User $user): bool
+    {
+        return $this->membershipOf($user)?->role->hasManagerRole() ?? false;
+    }
+
+    /**
      * @return array{name: string, description: string, url: string}
      */
     public function approvalSummary(): array
