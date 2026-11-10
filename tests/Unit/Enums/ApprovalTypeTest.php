@@ -20,6 +20,29 @@ class ApprovalTypeTest extends TestCase
         $this->assertSame($addsMember, $type->addsMember());
     }
 
+    #[DataProvider('decidedByStaff')]
+    public function test_says_whether_staff_decide_it(ApprovalType $type, bool $decidedByStaff): void
+    {
+        $this->assertSame($decidedByStaff, $type->decidedByStaff());
+    }
+
+    public function test_lists_the_kinds_staff_decide_for_their_queue(): void
+    {
+        $this->assertSame([ApprovalType::NewCircle], ApprovalType::forStaff());
+    }
+
+    /**
+     * @return array<string, array{ApprovalType, bool}>
+     */
+    public static function decidedByStaff(): array
+    {
+        return [
+            'a new circle' => [ApprovalType::NewCircle, true],
+            'a request to join' => [ApprovalType::JoinRequest, false],
+            'an invite' => [ApprovalType::Invite, false],
+        ];
+    }
+
     #[DataProvider('messages')]
     public function test_says_what_happened_after_each_decision(ApprovalType $type, string $approved, string $rejected): void
     {

@@ -16,7 +16,8 @@ class ApprovalController extends Controller
     private const int APPROVALS_PER_PAGE = 24;
 
     /**
-     * The staff queue: what's waiting for staff approval (new circles so far), longest-waiting first, with who asked.
+     * The staff queue: every kind of approval staff decide (ApprovalType::forStaff()) still waiting, the longest-waiting
+     * first, with who asked.
      */
     public function index(): Response
     {
@@ -25,7 +26,7 @@ class ApprovalController extends Controller
         return Inertia::render('approvals/Index', [
             'approvals' => Approval::query()
                 ->pending()
-                ->where('type', ApprovalType::NewCircle)
+                ->whereIn('type', ApprovalType::forStaff())
                 ->with(['approvable', 'requester'])
                 ->oldest('updated_at')
                 ->paginate(self::APPROVALS_PER_PAGE)

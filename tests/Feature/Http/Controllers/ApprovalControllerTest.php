@@ -34,8 +34,11 @@ class ApprovalControllerTest extends TestCase
         $newer = Circle::factory()->pending()->create(['name' => 'Exchange']);
         Circle::factory()->create();
         Circle::factory()->rejected()->create();
+        // Requests to join and invites are for whoever runs the circle and the person invited, not staff.
         $asker = User::factory()->create();
-        Approval::open(ApprovalType::JoinRequest, Circle::factory()->create(), $asker, $asker);
+        $joined = Circle::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $joined, $asker, $asker);
+        Approval::open(ApprovalType::Invite, $joined, User::factory()->create(), $this->memberOf($joined, CircleRole::Owner));
 
         $response = $this->actingAs($this->staff())->get(route('approvals.index'));
 

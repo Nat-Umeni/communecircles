@@ -50,6 +50,28 @@ enum ApprovalType: string
     }
 
     /**
+     * Whether staff decide it (anything new waiting to be let in), so it waits in their queue. The others are decided
+     * by whoever runs the thing, or by the person it's about.
+     */
+    public function decidedByStaff(): bool
+    {
+        return match ($this) {
+            self::NewCircle => true,
+            self::JoinRequest, self::Invite => false,
+        };
+    }
+
+    /**
+     * The kinds staff decide, for their approvals queue.
+     *
+     * @return list<self>
+     */
+    public static function forStaff(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $type): bool => $type->decidedByStaff()));
+    }
+
+    /**
      * Whether approving it lets the person it's about into the thing waiting for approval, e.g. as a member.
      */
     public function addsMember(): bool

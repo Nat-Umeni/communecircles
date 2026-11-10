@@ -18,9 +18,9 @@ class ApprovalPolicy
     }
 
     /**
-     * Determine whether the user can approve or reject it, while it's still waiting: staff for something new, whoever
-     * runs what's being joined (its managedBy(), so not staff) for a request to join, and only the person invited for
-     * an invite.
+     * Determine whether the user can approve or reject it, while it's still waiting: staff for the kinds they decide
+     * (ApprovalType::decidedByStaff(), e.g. something new), whoever runs what's being joined (its managedBy(), so not
+     * staff) for a request to join, and only the person invited for an invite.
      */
     public function decide(User $user, Approval $approval): bool
     {
@@ -28,8 +28,11 @@ class ApprovalPolicy
             return false;
         }
 
+        if ($approval->type->decidedByStaff()) {
+            return $user->role->internal();
+        }
+
         return match ($approval->type) {
-            ApprovalType::NewCircle => $user->role->internal(),
             ApprovalType::JoinRequest => $approval->approvable->managedBy($user),
             ApprovalType::Invite => $approval->user->is($user),
         };
