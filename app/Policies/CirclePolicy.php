@@ -45,6 +45,14 @@ class CirclePolicy
     }
 
     /**
+     * Determine whether the user can see who is in the circle: its owners and admins, and staff.
+     */
+    public function viewMembers(User $user, Circle $circle): bool
+    {
+        return $user->role->internal() || ($circle->membershipOf($user)?->role->hasManagerRole() ?? false);
+    }
+
+    /**
      * Determine whether the user can ask to join the circle: an approved circle they're not in, with a confirmed
      * email, and no request or invite of theirs still waiting. After a refusal or a declined invite they can ask again.
      */

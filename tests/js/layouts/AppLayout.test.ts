@@ -12,6 +12,13 @@ describe('AppLayout', () => {
         expect(wrapper.get('main').html()).toContain('<p>Page content</p>');
     });
 
+    it("puts the page's actions in the header, not the page", () => {
+        const wrapper = mount(AppLayout, { slots: { actions: '<a href="/edit" data-action>Edit</a>' } });
+
+        expect(wrapper.find('header [data-action]').exists()).toBe(true);
+        expect(wrapper.find('main [data-action]').exists()).toBe(false);
+    });
+
     it('opens the sidebar from the header and closes it again from the sidebar', async () => {
         const wrapper = mount(AppLayout);
         const aside = () => wrapper.get('aside');

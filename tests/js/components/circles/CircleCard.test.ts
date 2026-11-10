@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import CircleCard from '@/components/circles/CircleCard.vue';
+import CountPill from '@/components/ui/CountPill.vue';
 import type { CircleOfMine, CircleSummary } from '@/types';
 
 const exchange: CircleSummary = {
@@ -21,10 +22,8 @@ describe('CircleCard', () => {
         expect(wrapper.get('header p').text()).toBe('Share skills and lend tools.');
     });
 
-    it('says how many members it has', () => {
-        expect(mount(CircleCard, { props: { circle: exchange } }).text()).toContain('3 members');
-        expect(mount(CircleCard, { props: { circle: { ...exchange, members_count: 1 } } }).text()).toContain('1 member');
-        expect(mount(CircleCard, { props: { circle: { ...exchange, members_count: 1 } } }).text()).not.toContain('1 members');
+    it('says how many members it has in the member-count pill', () => {
+        expect(mount(CircleCard, { props: { circle: exchange } }).getComponent(CountPill).props()).toEqual({ count: 3, singular: 'member', plural: 'members' });
     });
 
     it('says where the circle is when it has a location', () => {

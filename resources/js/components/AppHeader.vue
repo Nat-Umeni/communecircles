@@ -25,6 +25,9 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
         <AppLogo :href="route('home')" />
 
         <div class="ml-auto flex items-center gap-3">
+            <!-- The page's own actions, e.g. editing the circle being viewed. -->
+            <slot name="actions" />
+
             <!-- Only members can create things. -->
             <DropdownMenu v-if="$page.props.auth.user" label="Create" tone="brand">
                 <template #trigger>

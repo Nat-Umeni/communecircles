@@ -102,6 +102,45 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($staff->can('viewChannels', Circle::factory()->create()));
     }
 
+    /**
+     * @param  'Owner'|'Admin'  $role
+     */
+    #[DataProvider('managerRoleNames')]
+    public function test_the_circles_owners_and_admins_can_see_who_is_in_it(string $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertTrue($this->memberOf($circle, constant(CircleRole::class.'::'.$role))->can('viewMembers', $circle));
+    }
+
+    #[DataProvider('staffRoles')]
+    public function test_staff_can_see_who_is_in_any_circle(Role $role): void
+    {
+        $staff = User::factory()->create(['role' => $role]);
+
+        $this->assertTrue($staff->can('viewMembers', Circle::factory()->create()));
+    }
+
+    public function test_a_plain_member_cannot_see_who_is_in_their_circle(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($this->memberOf($circle, CircleRole::Member)->can('viewMembers', $circle));
+    }
+
+    public function test_an_owner_of_another_circle_cannot_see_who_is_in_this_one(): void
+    {
+        $circle = Circle::factory()->create();
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertFalse($outsider->can('viewMembers', $circle));
+    }
+
+    public function test_guests_cannot_see_who_is_in_a_circle(): void
+    {
+        $this->assertFalse(Gate::allows('viewMembers', Circle::factory()->create()));
+    }
+
     public function test_members_who_confirmed_their_email_can_ask_to_join_a_circle_they_are_not_in(): void
     {
         $circle = Circle::factory()->create();

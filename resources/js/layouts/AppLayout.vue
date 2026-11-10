@@ -11,7 +11,11 @@ const sidebarOpen = ref(false);
 
 <template>
     <div class="min-h-dvh">
-        <AppHeader v-model:sidebar-open="sidebarOpen" />
+        <AppHeader v-model:sidebar-open="sidebarOpen">
+            <template #actions>
+                <slot name="actions" />
+            </template>
+        </AppHeader>
 
         <div class="flex">
             <AppSidebar v-model:open="sidebarOpen" />

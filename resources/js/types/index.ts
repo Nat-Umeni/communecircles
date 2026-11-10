@@ -136,6 +136,18 @@ export interface WaitingInvite {
 }
 
 /**
+ * Someone in a circle, as its owners, admins and staff see them.
+ */
+export interface CircleMember {
+    /** Their membership's id, not their account's. */
+    id: number;
+    name: string;
+    /** The value of App\Enums\CircleRole and its label. */
+    role: { value: 'owner' | 'admin' | 'member'; label: string };
+    joined_at: string;
+}
+
+/**
  * Something in the staff approvals queue (ApprovalController::index): what kind of approval it is, the thing waiting
  * for approval (from its approvalSummary()), and who asked. requester is null if their account is gone.
  */

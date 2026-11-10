@@ -40,6 +40,12 @@ describe('AppHeader', () => {
         wrapper.unmount();
     });
 
+    it("shows the page's own actions in the bar", () => {
+        const wrapper = mount(AppHeader, { props: { sidebarOpen: false }, slots: { actions: '<a href="/edit" data-action>Edit</a>' } });
+
+        expect(wrapper.get('header [data-action]').text()).toBe('Edit');
+    });
+
     it('has no Create menu for guests', () => {
         const wrapper = mount(AppHeader, { props: { sidebarOpen: false } });
 

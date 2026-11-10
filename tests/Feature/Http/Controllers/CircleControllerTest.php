@@ -472,6 +472,48 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->where('pending_invites', null));
     }
 
+    public function test_shows_those_who_can_see_the_members_everyone_in_the_circle_owners_then_admins_then_members(): void
+    {
+        $this->freezeSecond();
+        $circle = Circle::factory()->create();
+        // The newest member's row is written first, so the order is by when they joined, not by row or account.
+        $newest = User::factory()->create();
+        $circle->members()->attach($newest, ['role' => CircleRole::Member, 'created_at' => now()->addHours(3)]);
+        $longestIn = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+        $circle->members()->attach($longestIn, ['role' => CircleRole::Member]);
+        $joinedAt = now();
+        $this->travel(1)->hour();
+        $admin = $this->memberOf($circle, CircleRole::Admin);
+        $this->travel(1)->hour();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+
+        $response = $this->actingAs($admin)->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('members', 4)
+            ->where('members.0.id', $circle->membershipOf($owner)->id)
+            ->where('members.1.id', $circle->membershipOf($admin)->id)
+            ->where('members.2', [
+                'id' => $circle->membershipOf($longestIn)->id,
+                'name' => 'Ada Lovelace',
+                'role' => ['value' => 'member', 'label' => 'Member'],
+                'joined_at' => $joinedAt->toIso8601String(),
+            ])
+            ->where('members.3.id', $circle->membershipOf($newest)->id));
+    }
+
+    public function test_shows_a_plain_member_who_else_is_in_the_circle_only_as_a_count(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->memberOf($circle, CircleRole::Owner);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Member))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('circle.members_count', 2)
+            ->where('members', null));
+    }
+
     public function test_an_unknown_circle_is_not_found(): void
     {
         $response = $this->get(route('circles.show', 'abcdefghij'));

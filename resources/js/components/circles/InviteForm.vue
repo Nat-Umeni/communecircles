@@ -13,6 +13,8 @@ const props = defineProps<{
 // Field names match the validation in app/Http/Requests/Circle/StoreInviteRequest.php.
 const form = useForm({ email: '' });
 
+// NOTE: the field and button sit side by side by the form's own width, not the screen's, since the form can be in half a row.
+
 function submit(): void {
     form.post(route('circles.invites.store', props.circle), {
         preserveScroll: true,
@@ -22,10 +24,12 @@ function submit(): void {
 </script>
 
 <template>
-    <form class="flex flex-col gap-3 sm:flex-row sm:items-start" novalidate @submit.prevent="submit">
-        <FormField v-slot="field" label="Email address" hint="They'll need an account already." :error="form.errors.email" class="flex-1">
-            <Input v-bind="field" v-model="form.email" type="email" name="email" autocomplete="off" placeholder="them@example.com" required />
-        </FormField>
-        <Button type="submit" size="lg" class="sm:mt-7" :disabled="form.processing">Send invite</Button>
+    <form class="@container" novalidate @submit.prevent="submit">
+        <div class="flex flex-col gap-3 @md:flex-row @md:items-start">
+            <FormField v-slot="field" label="Email address" hint="They'll need an account already." :error="form.errors.email" class="flex-1">
+                <Input v-bind="field" v-model="form.email" type="email" name="email" autocomplete="off" placeholder="them@example.com" required />
+            </FormField>
+            <Button type="submit" size="lg" class="@md:mt-7" :disabled="form.processing">Send invite</Button>
+        </div>
     </form>
 </template>

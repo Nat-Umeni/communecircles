@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Pencil } from '@lucide/vue';
 import { route } from 'ziggy-js';
 import AppLayout from '@/layouts/AppLayout.vue';
+import HeaderAction from '@/components/HeaderAction.vue';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
 import CircleLocation from '@/components/circles/CircleLocation.vue';
 import DeleteCircle from '@/components/circles/DeleteCircle.vue';
 import InviteForm from '@/components/circles/InviteForm.vue';
+import MembersTable from '@/components/circles/MembersTable.vue';
 import Alert from '@/components/ui/Alert.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
+import CountPill from '@/components/ui/CountPill.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
-import type { CircleApproval, CirclePermissions, CircleSummary, Invite, JoinRequest, WaitingInvite, WaitingJoinRequest } from '@/types';
+import type { CircleApproval, CircleMember, CirclePermissions, CircleSummary, Invite, JoinRequest, WaitingInvite, WaitingJoinRequest } from '@/types';
 
 // From CircleController::show.
 const props = defineProps<{
@@ -27,9 +30,9 @@ const props = defineProps<{
     invite: Invite | null;
     /** For the circle's owners and admins only; null for everyone else. */
     pending_invites: WaitingInvite[] | null;
+    /** Everyone in the circle, for its owners, admins and staff; null for everyone else, who get only the count. */
+    members: CircleMember[] | null;
 }>();
-
-const members = computed(() => `${props.circle.members_count} ${props.circle.members_count === 1 ? 'member' : 'members'}`);
 
 const joining = useForm({});
 
@@ -41,6 +44,12 @@ function askToJoin(): void {
 <template>
     <AppLayout>
         <Head :title="circle.name" />
+
+        <template #actions>
+            <HeaderAction v-if="can.update" :href="route('circles.edit', circle.public_id)" label="Edit circle">
+                <Pencil class="size-5" aria-hidden="true" />
+            </HeaderAction>
+        </template>
 
         <Alert v-if="approval" variant="warning" data-approval>
             <p class="font-semibold">{{ approval.label }}</p>
@@ -57,7 +66,7 @@ function askToJoin(): void {
         <Card :title="circle.name" :description="circle.description">
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <CircleLocation v-if="circle.location" :location="circle.location" />
-                <p class="text-sm text-muted-foreground">{{ members }}</p>
+                <CountPill :count="circle.members_count" singular="member" plural="members" />
             </div>
 
             <div v-if="join_request" data-join-request class="flex flex-col gap-1">
@@ -68,37 +77,43 @@ function askToJoin(): void {
             <div class="flex flex-wrap items-center gap-3 empty:hidden">
                 <Button v-if="can.request_to_join" :disabled="joining.processing" @click="askToJoin">Ask to join</Button>
                 <Button v-else-if="!$page.props.auth.user" :href="route('login')">Log in to ask to join</Button>
-                <Button v-if="can.update" variant="surface" :href="route('circles.edit', circle.public_id)">Edit</Button>
                 <DeleteCircle v-if="can.delete" :circle="circle" />
             </div>
         </Card>
 
-        <Card v-if="pending_join_requests" title="Requests to join" data-join-requests>
-            <ul v-if="pending_join_requests.length" class="flex flex-col divide-y divide-border">
-                <li v-for="request in pending_join_requests" :key="request.id" class="flex flex-wrap items-center justify-between gap-3 py-3">
-                    <p>
-                        <span class="font-semibold">{{ request.name }}</span>
-                        <span class="text-sm text-muted-foreground"> asked <TimeAgo :datetime="request.requested_at" /></span>
-                    </p>
-                    <!-- TODO: link to their profile once profiles exist, so they can be checked first. -->
-                    <ApprovalActions :approval="request.id" :subject="`${request.name}'s request`" approve-label="Accept" reject-label="Decline" />
-                </li>
-            </ul>
-            <p v-else class="text-muted-foreground">No one is waiting to join.</p>
-        </Card>
-
-        <!-- NOTE: owners and admins get the waiting invites even before the circle is approved, but can't invite yet. -->
-        <Card v-if="can.invite" title="Invite someone" data-invites>
-            <InviteForm :circle="circle.public_id" />
-            <template v-if="pending_invites?.length">
-                <h4 class="font-semibold">Waiting for an answer</h4>
-                <ul class="flex flex-col divide-y divide-border">
-                    <li v-for="invited in pending_invites" :key="invited.id" class="py-3">
-                        <span class="font-semibold">{{ invited.name }}</span>
-                        <span class="text-sm text-muted-foreground"> invited <TimeAgo :datetime="invited.invited_at" /></span>
+        <!-- NOTE: stacked on phones; side by side from sm up, and one card alone takes the whole row. -->
+        <div class="grid gap-6 empty:hidden sm:auto-cols-fr sm:grid-flow-col">
+            <Card v-if="pending_join_requests" title="Requests to join" data-join-requests>
+                <ul v-if="pending_join_requests.length" class="flex flex-col divide-y divide-border">
+                    <li v-for="request in pending_join_requests" :key="request.id" class="flex flex-wrap items-center justify-between gap-3 py-3">
+                        <p>
+                            <span class="font-semibold">{{ request.name }}</span>
+                            <span class="text-sm text-muted-foreground"> asked <TimeAgo :datetime="request.requested_at" /></span>
+                        </p>
+                        <!-- TODO: link to their profile once profiles exist, so they can be checked first. -->
+                        <ApprovalActions :approval="request.id" :subject="`${request.name}'s request`" approve-label="Accept" reject-label="Decline" />
                     </li>
                 </ul>
-            </template>
+                <p v-else class="text-muted-foreground">No one is waiting to join.</p>
+            </Card>
+
+            <!-- NOTE: owners and admins get the waiting invites even before the circle is approved, but can't invite yet. -->
+            <Card v-if="can.invite" title="Invite someone" data-invites>
+                <InviteForm :circle="circle.public_id" />
+                <template v-if="pending_invites?.length">
+                    <h4 class="font-semibold">Waiting for an answer</h4>
+                    <ul class="flex flex-col divide-y divide-border">
+                        <li v-for="invited in pending_invites" :key="invited.id" class="py-3">
+                            <span class="font-semibold">{{ invited.name }}</span>
+                            <span class="text-sm text-muted-foreground"> invited <TimeAgo :datetime="invited.invited_at" /></span>
+                        </li>
+                    </ul>
+                </template>
+            </Card>
+        </div>
+
+        <Card v-if="members" title="Members" data-members>
+            <MembersTable :members="members" />
         </Card>
 
         <!-- TODO: list the circle's channels once they exist. -->

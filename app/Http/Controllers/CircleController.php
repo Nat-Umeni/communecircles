@@ -143,6 +143,7 @@ class CircleController extends Controller
             'pending_join_requests' => $this->waitingForManagers($circle, $request->user(), ApprovalType::JoinRequest, 'requested_at'),
             'invite' => $this->inviteFor($circle, $request->user()),
             'pending_invites' => $this->waitingForManagers($circle, $request->user(), ApprovalType::Invite, 'invited_at'),
+            'members' => Gate::allows('viewMembers', $circle) ? $this->membersOf($circle) : null,
         ]);
     }
 
@@ -184,6 +185,28 @@ class CircleController extends Controller
             'label' => $request->status->label(),
             'reason' => $request->reason,
         ];
+    }
+
+    /**
+     * Everyone in the circle: owners, then admins, then members, the longest in first within each.
+     *
+     * @return list<array{id: int, name: string, role: array{value: string, label: string}, joined_at: string}>
+     */
+    private function membersOf(Circle $circle): array
+    {
+        return $circle->members()
+            ->oldest('circle_user.created_at')
+            ->get()
+            ->sortBy(fn (User $member): int => array_search($member->pivot->role, CircleRole::cases(), true))
+            // TODO: add each person's profile link once profiles exist.
+            ->map(fn (User $member): array => [
+                'id' => $member->pivot->id,
+                'name' => "{$member->first_name} {$member->last_name}",
+                'role' => ['value' => $member->pivot->role->value, 'label' => $member->pivot->role->label()],
+                'joined_at' => $member->pivot->created_at->toIso8601String(),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

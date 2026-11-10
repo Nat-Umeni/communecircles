@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
 import DeleteCircle from '@/components/circles/DeleteCircle.vue';
 import InviteForm from '@/components/circles/InviteForm.vue';
+import MembersTable from '@/components/circles/MembersTable.vue';
+import CountPill from '@/components/ui/CountPill.vue';
 import Show from '@/pages/circles/Show.vue';
-import type { CircleApproval, CirclePermissions, CircleSummary, Invite, JoinRequest, Place, WaitingInvite, WaitingJoinRequest } from '@/types';
+import type { CircleApproval, CircleMember, CirclePermissions, CircleSummary, Invite, JoinRequest, Place, WaitingInvite, WaitingJoinRequest } from '@/types';
 import { fakeRouter, links, signIn, visit } from '@tests/support';
 
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
@@ -29,6 +31,7 @@ interface ShowProps {
     pending_join_requests: WaitingJoinRequest[] | null;
     invite: Invite | null;
     pending_invites: WaitingInvite[] | null;
+    members: CircleMember[] | null;
 }
 
 /**
@@ -36,7 +39,7 @@ interface ShowProps {
  */
 function show(props: Partial<ShowProps> = {}): VueWrapper {
     return mount(Show, {
-        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, ...props },
+        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, ...props },
     });
 }
 
@@ -50,19 +53,28 @@ function button(wrapper: VueWrapper, label: string) {
 
 describe('circles/Show', () => {
     it('shows the circle, where it is and how many are in it', () => {
-        const text = show().text();
+        const wrapper = show();
 
-        expect(text).toContain('Seed Exchange');
-        expect(text).toContain('Swapping seeds that grow well here.');
-        expect(text).toContain('Totnes, England, United Kingdom');
-        expect(text).toContain('3 members');
-        expect(show({ circle: { ...exchange, members_count: 1, location: null } }).text()).toContain('1 member');
+        expect(wrapper.text()).toContain('Seed Exchange');
+        expect(wrapper.text()).toContain('Swapping seeds that grow well here.');
+        expect(wrapper.text()).toContain('Totnes, England, United Kingdom');
+        expect(wrapper.getComponent(CountPill).props()).toEqual({ count: 3, singular: 'member', plural: 'members' });
+        expect(show({ circle: { ...exchange, location: null } }).text()).not.toContain('Totnes');
     });
 
-    it('lets those who can edit the circle', () => {
+    it('lets those who can edit the circle from the header', () => {
         signIn();
+        const wrapper = show({ can: { ...nothing, update: true } });
 
-        expect(links(show({ can: { ...nothing, update: true } }))).toContainEqual(['Edit', '/circles.edit/abc123']);
+        expect(wrapper.get('header a[aria-label="Edit circle"]').attributes('href')).toBe('/circles.edit/abc123');
+        expect(wrapper.get('main').find('a[href="/circles.edit/abc123"]').exists()).toBe(false);
+    });
+
+    it('shows everyone in the circle to those who can see its members', () => {
+        signIn();
+        const members: CircleMember[] = [{ id: 7, name: 'Grace Hopper', role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' }];
+
+        expect(show({ members }).get('[data-members]').getComponent(MembersTable).props('members')).toEqual(members);
     });
 
     it('lets those who can delete the circle', () => {
@@ -169,7 +181,7 @@ describe('circles/Show', () => {
         const wrapper = show();
 
         expect(button(wrapper, 'Ask to join')).toBeUndefined();
-        expect(links(wrapper).map(([label]) => label)).not.toContain('Edit');
+        expect(wrapper.find('a[href="/circles.edit/abc123"]').exists()).toBe(false);
         expect(links(wrapper).map(([label]) => label)).not.toContain('Log in to ask to join');
         expect(wrapper.findComponent(DeleteCircle).exists()).toBe(false);
         expect(decisions(wrapper)).toEqual([]);
@@ -179,6 +191,7 @@ describe('circles/Show', () => {
         expect(wrapper.find('[data-join-requests]').exists()).toBe(false);
         expect(wrapper.find('[data-invites]').exists()).toBe(false);
         expect(wrapper.find('[data-channels]').exists()).toBe(false);
+        expect(wrapper.find('[data-members]').exists()).toBe(false);
     });
 
     it("doesn't let anyone but staff decide on the circle", () => {
