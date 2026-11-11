@@ -121,6 +121,42 @@ class CirclePolicyTest extends TestCase
         $this->assertTrue($staff->can('viewMembers', Circle::factory()->create()));
     }
 
+    /**
+     * @param  'Owner'|'Admin'  $role
+     */
+    #[DataProvider('managerRoleNames')]
+    public function test_the_circles_owners_and_admins_can_see_its_waiting_requests_and_invites(string $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertTrue($this->memberOf($circle, constant(CircleRole::class.'::'.$role))->can('viewWaitingApprovals', $circle));
+    }
+
+    public function test_a_plain_member_cannot_see_the_waiting_requests_and_invites(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertFalse($this->memberOf($circle, CircleRole::Member)->can('viewWaitingApprovals', $circle));
+    }
+
+    #[DataProvider('staffRoles')]
+    public function test_staff_can_see_any_circles_waiting_requests_and_invites(Role $role): void
+    {
+        $this->assertTrue(User::factory()->create(['role' => $role])->can('viewWaitingApprovals', Circle::factory()->create()));
+    }
+
+    public function test_an_owner_of_another_circle_cannot_see_this_ones_waiting_requests_and_invites(): void
+    {
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertFalse($outsider->can('viewWaitingApprovals', Circle::factory()->create()));
+    }
+
+    public function test_guests_cannot_see_a_circles_waiting_requests_and_invites(): void
+    {
+        $this->assertFalse(Gate::allows('viewWaitingApprovals', Circle::factory()->create()));
+    }
+
     public function test_a_plain_member_cannot_see_who_is_in_their_circle(): void
     {
         $circle = Circle::factory()->create();

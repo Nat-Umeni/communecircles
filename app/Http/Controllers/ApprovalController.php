@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\ApprovalType;
 use App\Http\Requests\Approval\RejectApprovalRequest;
+use App\Http\Resources\ApprovalResource;
 use App\Models\Approval;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,13 +31,7 @@ class ApprovalController extends Controller
                 ->with(['approvable', 'requester'])
                 ->oldest('updated_at')
                 ->paginate(self::APPROVALS_PER_PAGE)
-                ->through(fn (Approval $approval): array => [
-                    'id' => $approval->id,
-                    'type' => ['value' => $approval->type->value, 'label' => $approval->type->label()],
-                    'requested_at' => $approval->updated_at->toIso8601String(),
-                    'subject' => $approval->approvable->approvalSummary(),
-                    'requester' => $approval->requester?->only('first_name', 'last_name'),
-                ]),
+                ->through(fn (Approval $approval): ApprovalResource => $approval->toResource()),
         ]);
     }
 

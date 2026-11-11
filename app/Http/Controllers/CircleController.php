@@ -8,6 +8,9 @@ use App\Enums\CircleRole;
 use App\Http\Requests\Circle\DeleteCircleRequest;
 use App\Http\Requests\Circle\StoreCircleRequest;
 use App\Http\Requests\Circle\UpdateCircleRequest;
+use App\Http\Resources\ApprovalResource;
+use App\Http\Resources\CircleResource;
+use App\Http\Resources\UserResource;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
@@ -43,31 +46,13 @@ class CircleController extends Controller
                 ->orderBy('name')
                 ->paginate(self::CIRCLES_PER_PAGE)
                 ->withQueryString()
-                ->through(fn (Circle $circle): array => [...$this->details($circle), 'members_count' => $circle->members_count]),
+                ->through(fn (Circle $circle): CircleResource => $circle->toResource()),
             'filters' => ['search' => $search],
-            'your_circles' => $this->circlesOf($request->user()),
+            // Every circle the viewer is in, approved or not, with where its approval stands, so they can find their
+            // circles while they wait. Null for guests.
+            'your_circles' => $request->user()?->circles()->with('approval')->withCount('members')->orderBy('name')->get()
+                ->toResourceCollection(CircleResource::class),
         ]);
-    }
-
-    /**
-     * Every circle the viewer is in, approved or not, in name order, each with where its approval stands, so they
-     * can find their circles while they wait for approval. Null for guests.
-     *
-     * @return list<array<string, mixed>>|null
-     */
-    private function circlesOf(?User $viewer): ?array
-    {
-        if ($viewer === null) {
-            return null;
-        }
-
-        return $viewer->circles()->with('approval')->withCount('members')->orderBy('name')->get()
-            ->map(fn (Circle $circle): array => [
-                ...$this->details($circle),
-                'members_count' => $circle->members_count,
-                'status' => ['value' => $circle->approval->status->value, 'label' => $circle->approval->status->label()],
-            ])
-            ->all();
     }
 
     /**
@@ -117,14 +102,17 @@ class CircleController extends Controller
     /**
      * Show the circle's page, with what the viewer can do there. Until staff approve the circle, the page also says
      * where its approval stands, which only its members and staff can see. It also shows the viewer their own request
-     * to join or invite, and shows the circle's owners and admins the requests and invites still waiting.
+     * to join or invite, and shows staff and the circle's owners and admins the requests and invites still waiting.
      */
     public function show(Request $request, Circle $circle): Response
     {
         Gate::authorize('view', $circle);
 
+        $viewer = $request->user();
+        $circle->loadCount('members');
+
         return Inertia::render('circles/Show', [
-            'circle' => [...$this->details($circle), 'members_count' => $circle->loadCount('members')->members_count],
+            'circle' => $circle->toResource(),
             'can' => [
                 'view_channels' => Gate::allows('viewChannels', $circle),
                 'request_to_join' => Gate::allows('requestToJoin', $circle),
@@ -132,111 +120,17 @@ class CircleController extends Controller
                 'update' => Gate::allows('update', $circle),
                 'delete' => Gate::allows('delete', $circle),
             ],
-            'approval' => $circle->isApproved() ? null : [
-                'id' => $circle->approval->id,
-                'status' => $circle->approval->status->value,
-                'label' => $circle->approval->status->label(),
-                'reason' => $circle->approval->reason,
-                'can_decide' => Gate::allows('decide', $circle->approval),
-            ],
-            'join_request' => $this->joinRequestOf($circle, $request->user()),
-            'pending_join_requests' => $this->waitingForManagers($circle, $request->user(), ApprovalType::JoinRequest, 'requested_at'),
-            'invite' => $this->inviteFor($circle, $request->user()),
-            'pending_invites' => $this->waitingForManagers($circle, $request->user(), ApprovalType::Invite, 'invited_at'),
-            'members' => Gate::allows('viewMembers', $circle) ? $this->membersOf($circle) : null,
+            'approval' => $circle->isApproved() ? null : $circle->approval->toResource(),
+            'join_request' => $circle->approvalFor(ApprovalType::JoinRequest, $viewer)?->toResource(),
+            'invite' => $circle->inviteFor($viewer)?->load('requester')->toResource(),
+            'pending_join_requests' => Gate::allows('viewWaitingApprovals', $circle)
+                ? $circle->waitingApprovals(ApprovalType::JoinRequest)->toResourceCollection(ApprovalResource::class)
+                : null,
+            'pending_invites' => Gate::allows('viewWaitingApprovals', $circle)
+                ? $circle->waitingApprovals(ApprovalType::Invite)->toResourceCollection(ApprovalResource::class)
+                : null,
+            'members' => Gate::allows('viewMembers', $circle) ? $circle->membersByRole()->toResourceCollection(UserResource::class) : null,
         ]);
-    }
-
-    /**
-     * The viewer's own invite into the circle, with who sent it: one still waiting for them to accept or decline, or
-     * one its owners and admins cancelled, which they're only told has expired. Null when they have neither, or are
-     * in the circle already (e.g. they asked to join after their invite was cancelled).
-     *
-     * @return array{id: int, invited_by: string|null, expired: bool}|null
-     */
-    private function inviteFor(Circle $circle, ?User $viewer): ?array
-    {
-        $invite = $viewer === null || $circle->membershipOf($viewer) !== null ? null : $circle->approvals()
-            ->whereIn('status', [ApprovalStatus::Pending, ApprovalStatus::Cancelled])
-            ->where('type', ApprovalType::Invite)
-            ->where('user_id', $viewer->id)
-            ->with('requester')
-            ->first();
-
-        return $invite === null ? null : [
-            'id' => $invite->id,
-            'invited_by' => $invite->requester === null ? null : "{$invite->requester->first_name} {$invite->requester->last_name}",
-            'expired' => $invite->status === ApprovalStatus::Cancelled,
-        ];
-    }
-
-    /**
-     * The viewer's own request to join, with where it stands, or null when they haven't asked.
-     *
-     * @return array{status: string, label: string, reason: string|null}|null
-     */
-    private function joinRequestOf(Circle $circle, ?User $viewer): ?array
-    {
-        $request = $viewer === null ? null : $circle->approvals()
-            ->where('type', ApprovalType::JoinRequest)
-            ->where('user_id', $viewer->id)
-            ->first();
-
-        return $request === null ? null : [
-            'status' => $request->status->value,
-            'label' => $request->status->label(),
-            'reason' => $request->reason,
-        ];
-    }
-
-    /**
-     * Everyone in the circle: owners, then admins, then members, the longest in first within each.
-     *
-     * @return list<array{id: int, name: string, role: array{value: string, label: string}, joined_at: string}>
-     */
-    private function membersOf(Circle $circle): array
-    {
-        return $circle->members()
-            ->oldest('circle_user.created_at')
-            ->get()
-            ->sortBy(fn (User $member): int => array_search($member->pivot->role, CircleRole::cases(), true))
-            // TODO: add each person's profile link once profiles exist.
-            ->map(fn (User $member): array => [
-                'id' => $member->pivot->id,
-                'name' => "{$member->first_name} {$member->last_name}",
-                'role' => ['value' => $member->pivot->role->value, 'label' => $member->pivot->role->label()],
-                'joined_at' => $member->pivot->created_at->toIso8601String(),
-            ])
-            ->values()
-            ->all();
-    }
-
-    /**
-     * The approvals of a type still waiting (requests to join, or invites), oldest first, each with the person it's
-     * about and since when (under $sinceKey). Only the circle's owners and admins get the list; anyone else, staff
-     * included, gets null, since who joins a circle is the circle's own business.
-     *
-     * @return list<array<string, int|string>>|null
-     */
-    private function waitingForManagers(Circle $circle, ?User $viewer, ApprovalType $type, string $sinceKey): ?array
-    {
-        if ($viewer === null || ! ($circle->membershipOf($viewer)?->role->hasManagerRole() ?? false)) {
-            return null;
-        }
-
-        return $circle->approvals()
-            ->pending()
-            ->where('type', $type)
-            ->with('user')
-            ->oldest('updated_at')
-            ->get()
-            // TODO: add each person's profile link once profiles exist, so owners and admins can check them first.
-            ->map(fn (Approval $approval): array => [
-                'id' => $approval->id,
-                'name' => "{$approval->user->first_name} {$approval->user->last_name}",
-                $sinceKey => $approval->updated_at->toIso8601String(),
-            ])
-            ->all();
     }
 
     /**
@@ -247,7 +141,7 @@ class CircleController extends Controller
         Gate::authorize('update', $circle);
 
         return Inertia::render('circles/Edit', [
-            'circle' => $this->details($circle),
+            'circle' => $circle->loadMissing('approval')->toResource(),
             'countries' => Countries::options(),
         ]);
     }
@@ -278,18 +172,5 @@ class CircleController extends Controller
         $circle->delete();
 
         return to_route('circles.index');
-    }
-
-    /**
-     * What the pages show about a circle, with its location (or null) for the place name and the explore map.
-     *
-     * @return array{public_id: string, name: string, description: string, location: array<string, mixed>|null}
-     */
-    private function details(Circle $circle): array
-    {
-        return [
-            ...$circle->only('public_id', 'name', 'description'),
-            'location' => $circle->location()?->toArray(),
-        ];
     }
 }

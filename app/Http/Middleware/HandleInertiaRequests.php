@@ -41,16 +41,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $user ? [
-                    ...$user->only('first_name', 'last_name', 'email'),
-                    'role' => [
-                        'value' => $user->role->value,
-                        'label' => $user->role->label(),
-                        'internal' => $user->role->internal(),
-                    ],
-                    'email_verified' => $user->hasVerifiedEmail(),
-                ]
-                : null,
+                // UserResource sends the member their own email, whether it's confirmed and their role.
+                'user' => $user?->toResource(),
             ],
             'locale' => App::getLocale(),
             'locales' => [

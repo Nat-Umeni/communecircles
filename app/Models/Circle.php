@@ -7,16 +7,17 @@ use App\DTO\Location;
 use App\Enums\ApprovalStatus;
 use App\Enums\ApprovalType;
 use App\Enums\CircleRole;
+use App\Models\Concerns\HasApprovals;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Contracts\Approvable;
 use Database\Factories\CircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -25,7 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class Circle extends Model implements Approvable
 {
     /** @use HasFactory<CircleFactory> */
-    use HasFactory, HasPublicId, LogsActivity;
+    use HasApprovals, HasFactory, HasPublicId, LogsActivity;
 
     /**
      * Record changes to the circle's details and location in the audit log, with who made them; only what changed.
@@ -39,14 +40,6 @@ class Circle extends Model implements Approvable
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
-    }
-
-    /**
-     * @return MorphMany<Approval, $this>
-     */
-    public function approvals(): MorphMany
-    {
-        return $this->morphMany(Approval::class, 'approvable');
     }
 
     /**
@@ -128,6 +121,36 @@ class Circle extends Model implements Approvable
             ->using(CircleUser::class)
             ->withPivot('id', 'role')
             ->withTimestamps();
+    }
+
+    /**
+     * Everyone in the circle with their membership: owners, then admins, then members, the longest in first within
+     * each.
+     *
+     * @return Collection<int, User>
+     */
+    public function membersByRole(): Collection
+    {
+        return $this->members()
+            ->oldest('circle_user.created_at')
+            ->get()
+            ->sortBy(fn (User $member): int => array_search($member->pivot->role, CircleRole::cases(), true))
+            ->values();
+    }
+
+    /**
+     * The invite to show the person: theirs while it waits for their answer, or once it's withdrawn (they're only
+     * told it expired). Null for a guest, someone without one, or someone already in the circle.
+     */
+    public function inviteFor(?User $user): ?Approval
+    {
+        if ($user === null || $this->membershipOf($user) !== null) {
+            return null;
+        }
+
+        $invite = $this->approvalFor(ApprovalType::Invite, $user);
+
+        return in_array($invite?->status, [ApprovalStatus::Pending, ApprovalStatus::Cancelled], true) ? $invite : null;
     }
 
     /**

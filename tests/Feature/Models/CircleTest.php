@@ -135,6 +135,59 @@ class CircleTest extends TestCase
         ];
     }
 
+    public function test_invite_for_someone_is_their_invite_while_it_waits_or_once_it_is_withdrawn(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $waiting = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+        $withdrawn = Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+        $withdrawn->cancel($owner);
+
+        $this->assertTrue($circle->inviteFor($waiting->user)?->is($waiting));
+        $this->assertTrue($circle->inviteFor($withdrawn->user)?->is($withdrawn));
+    }
+
+    public function test_invite_for_someone_who_declined_or_has_none_is_nothing(): void
+    {
+        $circle = Circle::factory()->create();
+        $decliner = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $decliner, $this->memberOf($circle, CircleRole::Owner))->reject($decliner);
+
+        $this->assertNull($circle->inviteFor($decliner));
+        $this->assertNull($circle->inviteFor(User::factory()->create()));
+        $this->assertNull($circle->inviteFor(null));
+    }
+
+    public function test_invite_for_someone_already_in_the_circle_is_nothing_even_if_an_old_one_was_withdrawn(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $member = User::factory()->create();
+        Approval::open(ApprovalType::Invite, $circle, $member, $owner)->cancel($owner);
+        $circle->members()->attach($member, ['role' => CircleRole::Member]);
+
+        $this->assertNull($circle->inviteFor($member));
+    }
+
+    public function test_members_by_role_are_owners_then_admins_then_members_longest_in_first_with_their_membership(): void
+    {
+        $this->freezeSecond();
+        $circle = Circle::factory()->create();
+        // The newest member's row is written first, so the order is by when they joined, not by row or account.
+        $newest = User::factory()->create();
+        $circle->members()->attach($newest, ['role' => CircleRole::Member, 'created_at' => now()->addHours(3)]);
+        $longestIn = $this->memberOf($circle, CircleRole::Member);
+        $this->travel(1)->hour();
+        $admin = $this->memberOf($circle, CircleRole::Admin);
+        $this->travel(1)->hour();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+
+        $members = $circle->membersByRole();
+
+        $this->assertSame([$owner->id, $admin->id, $longestIn->id, $newest->id], $members->modelKeys());
+        $this->assertSame(CircleRole::Owner, $members->first()->pivot->role);
+    }
+
     public function test_is_approved_only_once_staff_have_approved_it(): void
     {
         $this->assertTrue(Circle::factory()->create()->isApproved());
@@ -387,5 +440,16 @@ class CircleTest extends TestCase
     private function lastActivityAbout(Circle $circle): Activity
     {
         return Activity::query()->whereMorphedTo('subject', $circle)->latest('id')->firstOrFail();
+    }
+
+    /**
+     * A new user who belongs to the circle with the given role.
+     */
+    private function memberOf(Circle $circle, CircleRole $role): User
+    {
+        $user = User::factory()->create();
+        $circle->members()->attach($user, ['role' => $role]);
+
+        return $user;
     }
 }

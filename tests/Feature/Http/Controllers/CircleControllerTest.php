@@ -188,6 +188,7 @@ class CircleControllerTest extends TestCase
                 'description' => 'Share skills and lend tools.',
                 'members_count' => 1,
                 'location' => null,
+                'status' => ['value' => 'approved', 'label' => 'Approved'],
             ])
             ->where('can', ['view_channels' => false, 'request_to_join' => false, 'invite' => false, 'update' => false, 'delete' => false]));
     }
@@ -256,13 +257,10 @@ class CircleControllerTest extends TestCase
 
         $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval', [
-            'id' => $circle->approval->id,
-            'status' => 'pending',
-            'label' => 'Waiting for approval',
-            'reason' => null,
-            'can_decide' => false,
-        ]));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('approval.id', $circle->approval->id)
+            ->where('approval.status', ['value' => 'pending', 'label' => 'Waiting for approval'])
+            ->where('approval.can.decide', false));
     }
 
     public function test_shows_the_creator_why_staff_turned_their_circle_down(): void
@@ -272,8 +270,7 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('approval.status', 'rejected')
-            ->where('approval.label', 'Not approved')
+            ->where('approval.status', ['value' => 'rejected', 'label' => 'Not approved'])
             ->where('approval.reason', 'There is already a circle for tool sharing.'));
     }
 
@@ -283,7 +280,7 @@ class CircleControllerTest extends TestCase
 
         $response = $this->actingAs(User::factory()->create(['role' => Role::Admin]))->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval.can_decide', true));
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('approval.can.decide', true));
     }
 
     public function test_an_approved_circle_has_no_approval_to_show(): void
@@ -297,15 +294,14 @@ class CircleControllerTest extends TestCase
     {
         $circle = Circle::factory()->create();
         $asker = User::factory()->create();
-        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+        $request = Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
 
         $response = $this->actingAs($asker)->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('join_request', [
-            'status' => 'pending',
-            'label' => 'Waiting for approval',
-            'reason' => null,
-        ]));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('join_request.id', $request->id)
+            ->where('join_request.status', ['value' => 'pending', 'label' => 'Waiting for approval'])
+            ->where('join_request.reason', null));
     }
 
     public function test_shows_someone_why_their_request_to_join_was_turned_down(): void
@@ -317,7 +313,7 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($asker)->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('join_request.status', 'rejected')
+            ->where('join_request.status', ['value' => 'rejected', 'label' => 'Not approved'])
             ->where('join_request.reason', 'We are full for now.'));
     }
 
@@ -338,11 +334,10 @@ class CircleControllerTest extends TestCase
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->has('pending_join_requests', 2)
-            ->where('pending_join_requests.0', [
-                'id' => $firstRequest->id,
-                'name' => 'Ada Lovelace',
-                'requested_at' => $firstRequest->updated_at->toIso8601String(),
-            ])
+            ->where('pending_join_requests.0.id', $firstRequest->id)
+            ->where('pending_join_requests.0.user', ['first_name' => 'Ada', 'last_name' => 'Lovelace'])
+            ->where('pending_join_requests.0.requested_at', $firstRequest->updated_at->toIso8601String())
+            ->where('pending_join_requests.0.can.decide', true)
             ->where('pending_join_requests.1.id', $secondRequest->id));
     }
 
@@ -361,8 +356,8 @@ class CircleControllerTest extends TestCase
     /**
      * @param  Closure(Circle): ?User  $viewer
      */
-    #[DataProvider('notManagers')]
-    public function test_only_the_circles_owners_and_admins_see_the_requests_to_join(Closure $viewer): void
+    #[DataProvider('cannotSeeWaitingApprovals')]
+    public function test_only_staff_and_the_circles_owners_and_admins_see_the_requests_to_join(Closure $viewer): void
     {
         $circle = Circle::factory()->create();
         $asker = User::factory()->create();
@@ -374,10 +369,26 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->where('pending_join_requests', null));
     }
 
+    public function test_staff_see_the_requests_and_invites_waiting_but_cannot_decide_or_cancel_them(): void
+    {
+        $circle = Circle::factory()->create();
+        $asker = User::factory()->create();
+        Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker);
+        Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
+
+        $response = $this->actingAs(User::factory()->create(['role' => Role::SuperAdmin]))->get(route('circles.show', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pending_join_requests', 1)
+            ->where('pending_join_requests.0.can.decide', false)
+            ->has('pending_invites', 1)
+            ->where('pending_invites.0.can.cancel', false));
+    }
+
     /**
      * @return array<string, array{Closure(Circle): ?User}>
      */
-    public static function notManagers(): array
+    public static function cannotSeeWaitingApprovals(): array
     {
         return [
             'a guest' => [fn (): ?User => null],
@@ -388,7 +399,6 @@ class CircleControllerTest extends TestCase
 
                 return $member;
             }],
-            'staff' => [fn (): User => User::factory()->create(['role' => Role::SuperAdmin])],
         ];
     }
 
@@ -402,7 +412,11 @@ class CircleControllerTest extends TestCase
 
         $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace', 'expired' => false]));
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('invite.id', $invite->id)
+            ->where('invite.status', ['value' => 'pending', 'label' => 'Waiting for approval'])
+            ->where('invite.requester', ['first_name' => 'Ada', 'last_name' => 'Lovelace'])
+            ->where('invite.can.decide', true));
     }
 
     public function test_shows_someone_whose_invite_was_cancelled_that_it_expired_and_lets_them_ask_to_join(): void
@@ -417,7 +431,9 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->where('invite', ['id' => $invite->id, 'invited_by' => 'Ada Lovelace', 'expired' => true])
+            ->where('invite.id', $invite->id)
+            ->where('invite.status', ['value' => 'expired', 'label' => 'Expired'])
+            ->where('invite.requester', ['first_name' => 'Ada', 'last_name' => 'Lovelace'])
             ->where('can.request_to_join', true));
     }
 
@@ -443,7 +459,7 @@ class CircleControllerTest extends TestCase
 
         $response = $this->actingAs($invitee)->get(route('circles.show', $circle));
 
-        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite.invited_by', null));
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('invite.requester', null));
     }
 
     public function test_shows_the_circles_owners_and_admins_the_invites_still_waiting_oldest_first(): void
@@ -462,11 +478,10 @@ class CircleControllerTest extends TestCase
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->has('pending_invites', 2)
-            ->where('pending_invites.0', [
-                'id' => $firstInvite->id,
-                'name' => 'Grace Hopper',
-                'invited_at' => $firstInvite->updated_at->toIso8601String(),
-            ])
+            ->where('pending_invites.0.id', $firstInvite->id)
+            ->where('pending_invites.0.user', ['first_name' => 'Grace', 'last_name' => 'Hopper'])
+            ->where('pending_invites.0.requested_at', $firstInvite->updated_at->toIso8601String())
+            ->where('pending_invites.0.can.cancel', true)
             ->where('pending_invites.1.id', $secondInvite->id));
     }
 
@@ -489,8 +504,8 @@ class CircleControllerTest extends TestCase
     /**
      * @param  Closure(Circle): ?User  $viewer
      */
-    #[DataProvider('notManagers')]
-    public function test_only_the_circles_owners_and_admins_see_the_invites_waiting(Closure $viewer): void
+    #[DataProvider('cannotSeeWaitingApprovals')]
+    public function test_only_staff_and_the_circles_owners_and_admins_see_the_invites_waiting(Closure $viewer): void
     {
         $circle = Circle::factory()->create();
         Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->memberOf($circle, CircleRole::Owner));
@@ -520,15 +535,18 @@ class CircleControllerTest extends TestCase
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->has('members', 4)
-            ->where('members.0.id', $circle->membershipOf($owner)->id)
-            ->where('members.1.id', $circle->membershipOf($admin)->id)
+            ->where('members.0.membership.id', $circle->membershipOf($owner)->id)
+            ->where('members.1.membership.id', $circle->membershipOf($admin)->id)
             ->where('members.2', [
-                'id' => $circle->membershipOf($longestIn)->id,
-                'name' => 'Ada Lovelace',
-                'role' => ['value' => 'member', 'label' => 'Member'],
-                'joined_at' => $joinedAt->toIso8601String(),
+                'first_name' => 'Ada',
+                'last_name' => 'Lovelace',
+                'membership' => [
+                    'id' => $circle->membershipOf($longestIn)->id,
+                    'role' => ['value' => 'member', 'label' => 'Member'],
+                    'joined_at' => $joinedAt->toIso8601String(),
+                ],
             ])
-            ->where('members.3.id', $circle->membershipOf($newest)->id));
+            ->where('members.3.membership.id', $circle->membershipOf($newest)->id));
     }
 
     public function test_shows_a_plain_member_who_else_is_in_the_circle_only_as_a_count(): void
@@ -615,7 +633,17 @@ class CircleControllerTest extends TestCase
                 'name' => 'Exchange',
                 'description' => 'Share skills and lend tools.',
                 'location' => null,
+                'status' => ['value' => 'approved', 'label' => 'Approved'],
             ]));
+    }
+
+    public function test_gives_staff_the_same_circle_details_on_the_edit_page(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $response = $this->actingAs(User::factory()->create(['role' => Role::Admin]))->get(route('circles.edit', $circle));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('circle.status', ['value' => 'approved', 'label' => 'Approved']));
     }
 
     public function test_gives_the_edit_page_the_circles_place_so_it_can_be_kept_or_changed(): void

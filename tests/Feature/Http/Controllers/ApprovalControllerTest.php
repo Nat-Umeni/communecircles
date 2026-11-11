@@ -48,7 +48,10 @@ class ApprovalControllerTest extends TestCase
             ->where('approvals.data.0', [
                 'id' => $older->approval->id,
                 'type' => ['value' => ApprovalType::NewCircle->value, 'label' => 'New circle'],
+                'status' => ['value' => 'pending', 'label' => 'Waiting for approval'],
+                'reason' => null,
                 'requested_at' => $older->approval->updated_at->toIso8601String(),
+                'can' => ['decide' => true, 'cancel' => false],
                 'subject' => ['name' => 'Allotment', 'description' => 'Grow food together.', 'url' => route('circles.show', $older)],
                 'requester' => $older->approval->requester->only('first_name', 'last_name'),
             ])

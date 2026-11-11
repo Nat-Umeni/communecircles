@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Providers;
 
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -9,6 +10,13 @@ use Tests\TestCase;
 
 class AppServiceProviderTest extends TestCase
 {
+    public function test_resources_are_sent_without_a_data_wrapper_so_page_props_keep_their_shape(): void
+    {
+        $response = JsonResource::make(['name' => 'Seed Exchange'])->toResponse(request());
+
+        $this->assertSame(['name' => 'Seed Exchange'], $response->getData(true));
+    }
+
     public function test_default_password_rules_accept_a_strong_password(): void
     {
         $validator = Validator::make(['password' => 'Analytical1!'], ['password' => Password::defaults()]);

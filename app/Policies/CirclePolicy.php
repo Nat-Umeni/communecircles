@@ -49,7 +49,16 @@ class CirclePolicy
      */
     public function viewMembers(User $user, Circle $circle): bool
     {
-        return $user->role->internal() || ($circle->membershipOf($user)?->role->hasManagerRole() ?? false);
+        return $user->role->internal() || $circle->managedBy($user);
+    }
+
+    /**
+     * Determine whether the user can see the circle's requests to join and invites still waiting: staff, who can see
+     * everything in a circle, and whoever runs it (its owners and admins). Deciding on them is ApprovalPolicy's.
+     */
+    public function viewWaitingApprovals(User $user, Circle $circle): bool
+    {
+        return $user->role->internal() || $circle->managedBy($user);
     }
 
     /**
@@ -74,7 +83,7 @@ class CirclePolicy
      */
     public function invite(User $user, Circle $circle): bool
     {
-        return $circle->isApproved() && ($circle->membershipOf($user)?->role->hasManagerRole() ?? false);
+        return $circle->isApproved() && $circle->managedBy($user);
     }
 
     /**
@@ -116,7 +125,7 @@ class CirclePolicy
             return true;
         }
 
-        if (! ($circle->membershipOf($user)?->role->hasManagerRole() ?? false)) {
+        if (! $circle->managedBy($user)) {
             return false;
         }
 
