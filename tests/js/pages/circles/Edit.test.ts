@@ -1,12 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Edit from '@/pages/circles/Edit.vue';
-import type { CircleDetails, Option } from '@/types';
+import type { Circle, Option } from '@/types';
 import { fakeRouter, field, links } from '@tests/support';
 
 const countries: Option[] = [{ value: 'GB', label: 'United Kingdom' }];
 
-const exchange: CircleDetails = {
+const exchange: Circle = {
     public_id: 'abc123',
     name: 'Seed Exchange',
     description: 'Swapping seeds that grow well here.',

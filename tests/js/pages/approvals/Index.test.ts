@@ -2,18 +2,23 @@ import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
 import Index from '@/pages/approvals/Index.vue';
-import type { Paginated, QueuedApproval } from '@/types';
+import type { Approval, Loaded, Paginated } from '@/types';
+
+type Queued = Loaded<Approval, 'subject' | 'requester'>;
 import { signIn } from '@tests/support';
 
-const exchange: QueuedApproval = {
+const exchange: Queued = {
     id: 5,
     type: { value: 'new_circle', label: 'New circle' },
+    status: { value: 'pending', label: 'Waiting for approval' },
+    reason: null,
     requested_at: '2026-11-08T09:00:00+00:00',
+    can: { decide: true, cancel: false },
     subject: { name: 'Seed Exchange', description: 'Swapping seeds that grow well here.', url: '/circles/abc123' },
     requester: { first_name: 'Grace', last_name: 'Hopper' },
 };
 
-function queue(data: QueuedApproval[], pages: Partial<Paginated<QueuedApproval>> = {}): VueWrapper {
+function queue(data: Queued[], pages: Partial<Paginated<Queued>> = {}): VueWrapper {
     signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
 
     return mount(Index, {

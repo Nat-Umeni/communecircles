@@ -11,16 +11,16 @@ import Pagination from '@/components/ui/Pagination.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
 import Input from '@/components/ui/form/Input.vue';
-import type { CircleOfMine, CircleSummary, Option, Paginated } from '@/types';
+import type { Circle, Loaded, Option, Paginated } from '@/types';
 
 // From CircleController::index (also the home page until there's a dashboard), plus locale/locales shared by
 // HandleInertiaRequests.
 const props = defineProps<{
     /** Popular: approved circles, most members first, searched by name. */
-    circles: Paginated<CircleSummary>;
+    circles: Paginated<Loaded<Circle, 'members_count'>>;
     filters: { search: string };
     /** Every circle the member is in, approved or not; null for guests. */
-    your_circles: CircleOfMine[] | null;
+    your_circles: Loaded<Circle, 'members_count' | 'status'>[] | null;
     locale: string;
     locales: Option[];
 }>();

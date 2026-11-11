@@ -1,10 +1,12 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Index from '@/pages/circles/Index.vue';
-import type { CircleOfMine, CircleSummary, Paginated } from '@/types';
+import type { Circle, Loaded, Paginated } from '@/types';
+
+type Listed = Loaded<Circle, 'members_count'>;
 import { fakeRouter, groupButtons, links, locales, signIn } from '@tests/support';
 
-function circlesPage(data: CircleSummary[]): Paginated<CircleSummary> {
+function circlesPage(data: Listed[]): Paginated<Listed> {
     return { data, current_page: 1, last_page: 1, total: data.length, prev_page_url: null, next_page_url: null };
 }
 
@@ -13,7 +15,7 @@ const circles = circlesPage([
     { public_id: 'bbbbbbbbbb', name: 'Exchange', description: 'Share skills and lend tools.', members_count: 1, location: null },
 ]);
 
-const mine: CircleOfMine = {
+const mine: Loaded<Circle, 'members_count' | 'status'> = {
     public_id: 'cccccccccc',
     name: 'Seed Exchange',
     description: 'Swapping seeds that grow well here.',
@@ -25,7 +27,7 @@ const mine: CircleOfMine = {
 /**
  * The list as CircleController::index sends it: to a guest unless your_circles is given.
  */
-function index(props: { circles?: Paginated<CircleSummary>; filters?: { search: string }; your_circles?: CircleOfMine[] | null } = {}) {
+function index(props: { circles?: Paginated<Listed>; filters?: { search: string }; your_circles?: Loaded<Circle, 'members_count' | 'status'>[] | null } = {}) {
     return mount(Index, { props: { circles, filters: { search: '' }, your_circles: null, locale: 'en', locales, ...props } });
 }
 

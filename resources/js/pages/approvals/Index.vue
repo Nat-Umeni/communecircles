@@ -6,11 +6,11 @@ import Badge from '@/components/ui/Badge.vue';
 import Card from '@/components/ui/Card.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
-import type { Paginated, QueuedApproval } from '@/types';
+import type { Approval, Loaded, Paginated } from '@/types';
 
 // From ApprovalController::index, for staff: everything waiting for their approval, the longest-waiting first.
 defineProps<{
-    approvals: Paginated<QueuedApproval>;
+    approvals: Paginated<Loaded<Approval, 'subject' | 'requester'>>;
 }>();
 </script>
 

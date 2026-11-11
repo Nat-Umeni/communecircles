@@ -1,8 +1,9 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
+import type { Timestamp } from '@/types';
 
-function ago(datetime: string): string {
+function ago(datetime: Timestamp): string {
     return mount(TimeAgo, { props: { datetime } }).text();
 }
 

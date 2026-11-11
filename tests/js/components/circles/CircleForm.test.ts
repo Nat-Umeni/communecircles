@@ -2,7 +2,7 @@ import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import CircleForm from '@/components/circles/CircleForm.vue';
 import PlaceSearch from '@/components/circles/PlaceSearch.vue';
-import type { CircleDetails, Option, Place } from '@/types';
+import type { Circle, Option, Place } from '@/types';
 import { fakeRouter, field, visit } from '@tests/support';
 
 const countries: Option[] = [
@@ -12,7 +12,7 @@ const countries: Option[] = [
 
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
 
-const exchange: CircleDetails = {
+const exchange: Circle = {
     public_id: 'abc123',
     name: 'Seed Exchange',
     description: 'Swapping seeds that grow well here.',
@@ -23,7 +23,7 @@ function mountNew(): VueWrapper {
     return mount(CircleForm, { props: { method: 'post', url: '/circles.store', countries, submitLabel: 'Start the circle' } });
 }
 
-function mountEdit(circle: CircleDetails): VueWrapper {
+function mountEdit(circle: Circle): VueWrapper {
     return mount(CircleForm, { props: { method: 'put', url: '/circles.update/abc123', countries, circle, submitLabel: 'Save changes' } });
 }
 

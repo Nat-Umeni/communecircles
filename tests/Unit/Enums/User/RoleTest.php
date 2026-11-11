@@ -5,9 +5,17 @@ namespace Tests\Unit\Enums\User;
 use App\Enums\User\Role;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Tests\ReadsFrontendTypes;
 
 class RoleTest extends TestCase
 {
+    use ReadsFrontendTypes;
+
+    public function test_the_frontend_type_has_the_same_values(): void
+    {
+        $this->assertSame(array_column(Role::cases(), 'value'), $this->frontendEnumValues('user/role.ts'));
+    }
+
     #[DataProvider('labels')]
     public function test_labels_each_role_for_display(Role $role, string $label): void
     {

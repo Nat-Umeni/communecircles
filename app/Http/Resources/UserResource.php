@@ -16,7 +16,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class UserResource extends JsonResource
 {
     /**
-     * @return array<string, mixed>
+     * Keys ending in ? are sent only to the member themselves (email, email_verified, role) or when they come with
+     * a circle membership.
+     *
+     * @return array{first_name: string, last_name: string, 'email'?: string, 'email_verified'?: bool, 'role'?: array{value: string, label: string, internal: bool}, 'membership'?: array{id: int, role: array{value: string, label: string}, joined_at: string}}
      */
     public function toArray(Request $request): array
     {

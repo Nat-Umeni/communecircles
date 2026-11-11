@@ -4,14 +4,14 @@ import CircleLocation from '@/components/circles/CircleLocation.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Card from '@/components/ui/Card.vue';
 import CountPill from '@/components/ui/CountPill.vue';
-import type { CircleOfMine, CircleSummary } from '@/types';
+import type { Circle, Loaded } from '@/types';
 
 const props = defineProps<{
     /** One of the member's own circles carries its approval status, shown as a badge until it's approved. */
-    circle: CircleSummary | CircleOfMine;
+    circle: Loaded<Circle, 'members_count'>;
 }>();
 
-const status = computed(() => ('status' in props.circle && props.circle.status.value !== 'approved' ? props.circle.status : null));
+const status = computed(() => (props.circle.status && props.circle.status.value !== 'approved' ? props.circle.status : null));
 </script>
 
 <template>

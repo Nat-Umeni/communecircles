@@ -1,11 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import MembersTable from '@/components/circles/MembersTable.vue';
-import type { CircleMember } from '@/types';
+import type { Loaded, User } from '@/types';
 
-const members: CircleMember[] = [
-    { id: 1, name: 'Grace Hopper', role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' },
-    { id: 2, name: 'Alan Turing', role: { value: 'member', label: 'Member' }, joined_at: '2026-11-07T09:00:00+00:00' },
+const members: Loaded<User, 'membership'>[] = [
+    { first_name: 'Grace', last_name: 'Hopper', membership: { id: 1, role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' } },
+    { first_name: 'Alan', last_name: 'Turing', membership: { id: 2, role: { value: 'member', label: 'Member' }, joined_at: '2026-11-07T09:00:00+00:00' } },
 ];
 
 describe('MembersTable', () => {

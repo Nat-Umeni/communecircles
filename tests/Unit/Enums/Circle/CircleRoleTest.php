@@ -5,9 +5,17 @@ namespace Tests\Unit\Enums\Circle;
 use App\Enums\Circle\CircleRole;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Tests\ReadsFrontendTypes;
 
 class CircleRoleTest extends TestCase
 {
+    use ReadsFrontendTypes;
+
+    public function test_the_frontend_type_has_the_same_values(): void
+    {
+        $this->assertSame(array_column(CircleRole::cases(), 'value'), $this->frontendEnumValues('circle/circle-role.ts'));
+    }
+
     #[DataProvider('labels')]
     public function test_labels_each_role_for_display(CircleRole $role, string $label): void
     {

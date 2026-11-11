@@ -17,27 +17,31 @@ import Card from '@/components/ui/Card.vue';
 import CountPill from '@/components/ui/CountPill.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
-import type { CircleApproval, CircleMember, CirclePermissions, CircleSummary, Invite, JoinRequest, WaitingInvite, WaitingJoinRequest } from '@/types';
+import type { Approval, Circle, CirclePermissions, Loaded, User } from '@/types';
 
 // From CircleController::show.
 const props = defineProps<{
-    circle: CircleSummary;
+    circle: Loaded<Circle, 'members_count'>;
     can: CirclePermissions;
     /** The circle's own approval, while it isn't approved; null once it is. */
-    approval: CircleApproval | null;
+    approval: Approval | null;
     /** The viewer's own request to join, if they've asked. */
-    join_request: JoinRequest | null;
+    join_request: Approval | null;
     /** For the circle's owners and admins only; null for everyone else. */
-    pending_join_requests: WaitingJoinRequest[] | null;
+    pending_join_requests: Loaded<Approval, 'user'>[] | null;
     /** The viewer's own invite: waiting for their answer, or expired. */
-    invite: Invite | null;
+    invite: Loaded<Approval, 'requester'> | null;
     /** For the circle's owners and admins only; null for everyone else. */
-    pending_invites: WaitingInvite[] | null;
+    pending_invites: Loaded<Approval, 'user'>[] | null;
     /** Everyone in the circle, for its owners, admins and staff; null for everyone else, who get only the count. */
-    members: CircleMember[] | null;
+    members: Loaded<User, 'membership'>[] | null;
 }>();
 
 const joining = useForm({});
+
+function fullName(user: User): string {
+    return `${user.first_name} ${user.last_name}`;
+}
 
 // Whether the invite dialog is open; the header's Create menu opens it.
 const inviting = ref(false);
@@ -67,15 +71,19 @@ function askToJoin(): void {
         <InviteDialog v-if="can.invite" v-model:open="inviting" :circle="circle.public_id" />
 
         <Alert v-if="approval" variant="warning" data-approval>
-            <p class="font-semibold">{{ approval.label }}</p>
-            <p v-if="approval.status === 'pending'">The team checks each new circle before it's listed. Until then, only its members and the team can see it.</p>
+            <p class="font-semibold">{{ approval.status.label }}</p>
+            <p v-if="approval.status.value === 'pending'">The team checks each new circle before it's listed. Until then, only its members and the team can see it.</p>
             <p v-if="approval.reason">“{{ approval.reason }}”</p>
-            <p v-if="approval.status === 'rejected' && can.update">Edit the circle to send it to the team again.</p>
-            <ApprovalActions v-if="approval.can_decide" :approval="approval.id" :subject="circle.name" class="mt-3" />
+            <p v-if="approval.status.value === 'rejected' && can.update">Edit the circle to send it to the team again.</p>
+            <ApprovalActions v-if="approval.can.decide" :approval="approval.id" :subject="circle.name" class="mt-3" />
         </Alert>
 
-        <Card v-if="invite?.expired" title="This invite has expired" />
-        <Card v-else-if="invite" title="You're invited" :description="invite.invited_by ? `${invite.invited_by} invited you to join this circle.` : `You've been invited to join this circle.`">
+        <Card v-if="invite?.status.value === 'expired'" title="This invite has expired" />
+        <Card
+            v-else-if="invite"
+            title="You're invited"
+            :description="invite.requester ? `${fullName(invite.requester)} invited you to join this circle.` : `You've been invited to join this circle.`"
+        >
             <ApprovalActions :approval="invite.id" subject="the invite" approve-label="Accept" reject-label="Decline" />
         </Card>
 
@@ -86,7 +94,7 @@ function askToJoin(): void {
             </div>
 
             <div v-if="join_request" data-join-request class="flex flex-col gap-1">
-                <p>Your request to join: <strong>{{ join_request.label }}</strong></p>
+                <p>Your request to join: <strong>{{ join_request.status.label }}</strong></p>
                 <p v-if="join_request.reason" class="text-muted-foreground">“{{ join_request.reason }}”</p>
             </div>
 
@@ -103,11 +111,11 @@ function askToJoin(): void {
                 <ul v-if="pending_join_requests.length" class="flex flex-col divide-y divide-border">
                     <li v-for="request in pending_join_requests" :key="request.id" class="flex flex-wrap items-center justify-between gap-3 py-3">
                         <p>
-                            <span class="font-semibold">{{ request.name }}</span>
+                            <span class="font-semibold">{{ fullName(request.user) }}</span>
                             <span class="text-sm text-muted-foreground"> asked <TimeAgo :datetime="request.requested_at" /></span>
                         </p>
                         <!-- TODO: link to their profile once profiles exist, so they can be checked first. -->
-                        <ApprovalActions :approval="request.id" :subject="`${request.name}'s request`" approve-label="Accept" reject-label="Decline" />
+                        <ApprovalActions v-if="request.can.decide" :approval="request.id" :subject="`${fullName(request.user)}'s request`" approve-label="Accept" reject-label="Decline" />
                     </li>
                 </ul>
                 <p v-else class="text-muted-foreground">No one is waiting to join.</p>
@@ -117,10 +125,10 @@ function askToJoin(): void {
                 <ul v-if="pending_invites.length" class="flex flex-col divide-y divide-border">
                     <li v-for="invited in pending_invites" :key="invited.id" class="flex flex-wrap items-center justify-between gap-3 py-3">
                         <p>
-                            <span class="font-semibold">{{ invited.name }}</span>
-                            <span class="text-sm text-muted-foreground"> invited <TimeAgo :datetime="invited.invited_at" /></span>
+                            <span class="font-semibold">{{ fullName(invited.user) }}</span>
+                            <span class="text-sm text-muted-foreground"> invited <TimeAgo :datetime="invited.requested_at" /></span>
                         </p>
-                        <CancelInvite :invite="invited.id" :name="invited.name" />
+                        <CancelInvite v-if="invited.can.cancel" :invite="invited.id" :name="fullName(invited.user)" />
                     </li>
                 </ul>
                 <p v-else class="text-muted-foreground">No invites are waiting for an answer.</p>

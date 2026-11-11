@@ -7,12 +7,12 @@ import InviteDialog from '@/components/circles/InviteDialog.vue';
 import MembersTable from '@/components/circles/MembersTable.vue';
 import CountPill from '@/components/ui/CountPill.vue';
 import Show from '@/pages/circles/Show.vue';
-import type { CircleApproval, CircleMember, CirclePermissions, CircleSummary, Invite, JoinRequest, Place, WaitingInvite, WaitingJoinRequest } from '@/types';
+import type { Approval, Circle, CirclePermissions, Loaded, Place, User } from '@/types';
 import { fakeRouter, links, signIn, visit } from '@tests/support';
 
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
 
-const exchange: CircleSummary = {
+const exchange: Loaded<Circle, 'members_count'> = {
     public_id: 'abc123',
     name: 'Seed Exchange',
     description: 'Swapping seeds that grow well here.',
@@ -22,17 +22,36 @@ const exchange: CircleSummary = {
 
 const nothing: CirclePermissions = { view_channels: false, request_to_join: false, invite: false, update: false, delete: false };
 
-const waiting: CircleApproval = { id: 5, status: 'pending', label: 'Waiting for approval', reason: null, can_decide: false };
+/**
+ * An approval as ApprovalResource sends it; by default a new circle waiting for approval, which the viewer can't act on.
+ */
+function approval(overrides: Partial<Approval> = {}): Approval {
+    return {
+        id: 5,
+        type: { value: 'new_circle', label: 'New circle' },
+        status: { value: 'pending', label: 'Waiting for approval' },
+        reason: null,
+        requested_at: '2026-11-08T09:00:00+00:00',
+        can: { decide: false, cancel: false },
+        ...overrides,
+    };
+}
+
+const waiting = approval();
+
+const grace: User = { first_name: 'Grace', last_name: 'Hopper' };
+
+const alan: User = { first_name: 'Alan', last_name: 'Turing' };
 
 interface ShowProps {
-    circle: CircleSummary;
+    circle: Loaded<Circle, 'members_count'>;
     can: CirclePermissions;
-    approval: CircleApproval | null;
-    join_request: JoinRequest | null;
-    pending_join_requests: WaitingJoinRequest[] | null;
-    invite: Invite | null;
-    pending_invites: WaitingInvite[] | null;
-    members: CircleMember[] | null;
+    approval: Approval | null;
+    join_request: Approval | null;
+    pending_join_requests: Loaded<Approval, 'user'>[] | null;
+    invite: Loaded<Approval, 'requester'> | null;
+    pending_invites: Loaded<Approval, 'user'>[] | null;
+    members: Loaded<User, 'membership'>[] | null;
 }
 
 /**
@@ -83,7 +102,7 @@ describe('circles/Show', () => {
 
     it('shows everyone in the circle to those who can see its members', () => {
         signIn();
-        const members: CircleMember[] = [{ id: 7, name: 'Grace Hopper', role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' }];
+        const members: Loaded<User, 'membership'>[] = [{ ...grace, membership: { id: 7, role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' } }];
 
         expect(show({ members }).get('[data-members]').getComponent(MembersTable).props('members')).toEqual(members);
     });
@@ -114,10 +133,13 @@ describe('circles/Show', () => {
     it("says where the member's own request to join stands", () => {
         signIn();
 
-        expect(show({ join_request: { status: 'pending', label: 'Waiting for approval', reason: null } }).get('[data-join-request]').text())
-            .toContain('Your request to join: Waiting for approval');
+        const asked = approval({ type: { value: 'join_request', label: 'Request to join' } });
 
-        const turnedDown = show({ join_request: { status: 'rejected', label: 'Not approved', reason: 'We only take members from Devon.' } }).get('[data-join-request]').text();
+        expect(show({ join_request: asked }).get('[data-join-request]').text()).toContain('Your request to join: Waiting for approval');
+
+        const turnedDown = show({
+            join_request: { ...asked, status: { value: 'rejected', label: 'Not approved' }, reason: 'We only take members from Devon.' },
+        }).get('[data-join-request]').text();
         expect(turnedDown).toContain('Your request to join: Not approved');
         expect(turnedDown).toContain('“We only take members from Devon.”');
     });
@@ -134,7 +156,7 @@ describe('circles/Show', () => {
     it("says why the circle wasn't approved, and how to send it again", () => {
         signIn();
         const wrapper = show({
-            approval: { ...waiting, status: 'rejected', label: 'Not approved', reason: 'There is already a seed circle in Totnes.' },
+            approval: { ...waiting, status: { value: 'rejected', label: 'Not approved' }, reason: 'There is already a seed circle in Totnes.' },
             can: { ...nothing, update: true },
         });
 
@@ -149,23 +171,26 @@ describe('circles/Show', () => {
     it('lets staff approve or reject the circle', () => {
         signIn();
 
-        expect(decisions(show({ approval: { ...waiting, can_decide: true } }))).toEqual([
+        expect(decisions(show({ approval: { ...waiting, can: { decide: true, cancel: false } } }))).toEqual([
             { approval: 5, subject: 'Seed Exchange', approveLabel: 'Approve', rejectLabel: 'Reject' },
         ]);
     });
 
     it('lets someone who was invited accept or decline', () => {
         signIn();
-        const wrapper = show({ invite: { id: 9, invited_by: 'Ada Lovelace', expired: false } });
+        const invite = { ...approval({ id: 9, type: { value: 'invite', label: 'Invite' }, can: { decide: true, cancel: false } }), requester: grace };
+        const wrapper = show({ invite });
 
-        expect(wrapper.text()).toContain('Ada Lovelace invited you to join this circle.');
+        expect(wrapper.text()).toContain('Grace Hopper invited you to join this circle.');
         expect(decisions(wrapper)).toEqual([{ approval: 9, subject: 'the invite', approveLabel: 'Accept', rejectLabel: 'Decline' }]);
-        expect(show({ invite: { id: 9, invited_by: null, expired: false } }).text()).toContain("You've been invited to join this circle.");
+        expect(show({ invite: { ...invite, requester: null } }).text()).toContain("You've been invited to join this circle.");
     });
 
     it('tells someone whose invite was withdrawn only that it expired', () => {
         signIn();
-        const wrapper = show({ invite: { id: 9, invited_by: 'Ada Lovelace', expired: true } });
+        const wrapper = show({
+            invite: { ...approval({ id: 9, type: { value: 'invite', label: 'Invite' }, status: { value: 'expired', label: 'Expired' } }), requester: grace },
+        });
 
         expect(wrapper.text()).toContain('This invite has expired');
         expect(wrapper.text()).not.toContain('invited you to join');
@@ -175,7 +200,9 @@ describe('circles/Show', () => {
 
     it("lists the requests to join for the circle's owners and admins to decide", () => {
         signIn();
-        const wrapper = show({ pending_join_requests: [{ id: 3, name: 'Grace Hopper', requested_at: '2026-11-08T09:00:00+00:00' }] });
+        const wrapper = show({
+            pending_join_requests: [{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' }, can: { decide: true, cancel: false } }), user: grace }],
+        });
         const request = wrapper.get('[data-join-requests] li');
 
         expect(request.text()).toContain('Grace Hopper');
@@ -220,7 +247,11 @@ describe('circles/Show', () => {
 
     it("lists the invites waiting for an answer, for the circle's owners and admins to cancel", () => {
         signIn();
-        const wrapper = show({ pending_invites: [{ id: 4, name: 'Alan Turing', invited_at: '2026-11-07T09:00:00+00:00' }] });
+        const wrapper = show({
+            pending_invites: [
+                { ...approval({ id: 4, type: { value: 'invite', label: 'Invite' }, requested_at: '2026-11-07T09:00:00+00:00', can: { decide: false, cancel: true } }), user: alan },
+            ],
+        });
         const invited = wrapper.get('[data-invites] li');
 
         expect(wrapper.get('[data-invites] h3').text()).toBe('Invites');
@@ -228,6 +259,19 @@ describe('circles/Show', () => {
         expect(invited.get('time').attributes('datetime')).toBe('2026-11-07T09:00:00+00:00');
         expect(invited.getComponent(CancelInvite).props()).toEqual({ invite: 4, name: 'Alan Turing' });
         expect(show({ pending_invites: [] }).get('[data-invites]').text()).toContain('No invites are waiting for an answer.');
+    });
+
+    it('shows staff the requests and invites waiting, without letting them decide or cancel', () => {
+        signIn();
+        const wrapper = show({
+            pending_join_requests: [{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' } }), user: grace }],
+            pending_invites: [{ ...approval({ id: 4, type: { value: 'invite', label: 'Invite' } }), user: alan }],
+        });
+
+        expect(wrapper.get('[data-join-requests] li').text()).toContain('Grace Hopper');
+        expect(wrapper.get('[data-invites] li').text()).toContain('Alan Turing');
+        expect(decisions(wrapper)).toEqual([]);
+        expect(wrapper.findComponent(CancelInvite).exists()).toBe(false);
     });
 
     it("doesn't offer anything more to a member who can only look", () => {
@@ -256,7 +300,7 @@ describe('circles/Show', () => {
 
     it("doesn't suggest editing a circle that wasn't approved to those who can't edit it", () => {
         signIn();
-        const wrapper = show({ approval: { ...waiting, status: 'rejected', label: 'Not approved' } });
+        const wrapper = show({ approval: { ...waiting, status: { value: 'rejected', label: 'Not approved' } } });
 
         expect(wrapper.get('[data-approval]').text()).not.toContain('Edit the circle');
     });

@@ -1,10 +1,15 @@
 import { reactive } from 'vue';
-import type { AuthUser } from '@/types';
+import type { Loaded, User } from '@/types';
+
+/**
+ * The signed-in member as the shared auth.user prop has them: UserResource for themselves.
+ */
+type SignedIn = Loaded<User, 'email' | 'email_verified' | 'role'>;
 
 interface TestPage {
     component: string;
     props: {
-        auth: { user: AuthUser | null };
+        auth: { user: SignedIn | null };
         locale: string;
         locales: { value: string; label: string }[];
         errors: Record<string, string>;
@@ -46,7 +51,7 @@ export function resetPage(): void {
 /**
  * Log a member in for the current test, as the shared auth.user prop would.
  */
-export function signIn(overrides: Partial<AuthUser> = {}): AuthUser {
+export function signIn(overrides: Partial<SignedIn> = {}): SignedIn {
     page.props.auth.user = {
         first_name: 'Ada',
         last_name: 'Lovelace',

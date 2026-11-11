@@ -5,11 +5,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import CircleForm from '@/components/circles/CircleForm.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
-import type { CircleDetails, Option } from '@/types';
+import type { Circle, Option } from '@/types';
 
 // From CircleController::edit.
 defineProps<{
-    circle: CircleDetails;
+    circle: Circle;
     countries: Option[];
 }>();
 </script>

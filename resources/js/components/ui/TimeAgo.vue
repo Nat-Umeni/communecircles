@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { Timestamp } from '@/types';
 
 const props = defineProps<{
-    /** An ISO 8601 date and time, as Carbon's toIso8601String() sends it. */
-    datetime: string;
+    datetime: Timestamp;
 }>();
 
 // Each unit with its length in seconds, largest first. Months and years are taken as 30 and 365 days.

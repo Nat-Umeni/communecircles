@@ -15,7 +15,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class CircleResource extends JsonResource
 {
     /**
-     * @return array<string, mixed>
+     * Keys ending in ? are sent only when the caller loaded or counted them.
+     *
+     * @return array{public_id: string, name: string, description: string, location: array<string, mixed>|null, 'members_count'?: int, 'status'?: array{value: string, label: string}}
      */
     public function toArray(Request $request): array
     {

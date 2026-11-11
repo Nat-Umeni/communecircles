@@ -4,10 +4,10 @@ import { ref } from 'vue';
 import { route } from 'ziggy-js';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
-import type { CircleDetails } from '@/types';
+import type { Circle } from '@/types';
 
 const props = defineProps<{
-    circle: Pick<CircleDetails, 'public_id' | 'name'>;
+    circle: Pick<Circle, 'public_id' | 'name'>;
 }>();
 
 const deleting = useForm({});

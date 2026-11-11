@@ -24,6 +24,7 @@ import Select from '@/components/ui/form/Select.vue';
 import Textarea from '@/components/ui/form/Textarea.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
+import type { Timestamp } from '@/types';
 
 interface PaletteColour {
     name: string;
@@ -75,7 +76,8 @@ const countries = [
 // A middle page, so both directions show.
 const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_page_url: '#', next_page_url: '#' };
 
-const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+// toISOString() always gives YYYY-MM-DDTHH:mm:ss.sssZ, an ISO 8601 Timestamp.
+const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() as Timestamp;
 </script>
 
 <template>

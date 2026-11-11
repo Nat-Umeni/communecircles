@@ -2,9 +2,9 @@ import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import CircleCard from '@/components/circles/CircleCard.vue';
 import CountPill from '@/components/ui/CountPill.vue';
-import type { CircleOfMine, CircleSummary } from '@/types';
+import type { Circle, Loaded } from '@/types';
 
-const exchange: CircleSummary = {
+const exchange: Loaded<Circle, 'members_count'> = {
     public_id: 'k3x9q2mzt8',
     name: 'Exchange',
     description: 'Share skills and lend tools.',
@@ -27,7 +27,7 @@ describe('CircleCard', () => {
     });
 
     it('says where the circle is when it has a location', () => {
-        const located: CircleSummary = {
+        const located: Loaded<Circle, 'members_count'> = {
             ...exchange,
             location: { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom' },
         };
@@ -37,10 +37,10 @@ describe('CircleCard', () => {
     });
 
     it("shows a badge when one of the member's own circles is not approved yet", () => {
-        const waiting: CircleOfMine = { ...exchange, status: { value: 'pending', label: 'Waiting for approval' } };
-        const approved: CircleOfMine = { ...exchange, status: { value: 'approved', label: 'Approved' } };
+        const waiting: Loaded<Circle, 'members_count' | 'status'> = { ...exchange, status: { value: 'pending', label: 'Waiting for approval' } };
+        const approved: Loaded<Circle, 'members_count' | 'status'> = { ...exchange, status: { value: 'approved', label: 'Approved' } };
 
-        const rejected: CircleOfMine = { ...exchange, status: { value: 'rejected', label: 'Not approved' } };
+        const rejected: Loaded<Circle, 'members_count' | 'status'> = { ...exchange, status: { value: 'rejected', label: 'Not approved' } };
 
         expect(mount(CircleCard, { props: { circle: waiting } }).get('[data-status]').text()).toBe('Waiting for approval');
         expect(mount(CircleCard, { props: { circle: waiting } }).get('[data-status]').classes()).toContain('bg-warning');

@@ -7,7 +7,7 @@ import FormField from '@/components/ui/form/FormField.vue';
 import Input from '@/components/ui/form/Input.vue';
 import Select from '@/components/ui/form/Select.vue';
 import Textarea from '@/components/ui/form/Textarea.vue';
-import type { CircleDetails, Option, Place } from '@/types';
+import type { Circle, Option, Place } from '@/types';
 
 const props = defineProps<{
     /** Where the form goes: a post to circles.store for a new circle, a put to circles.update for an edit. */
@@ -15,7 +15,7 @@ const props = defineProps<{
     url: string;
     countries: Option[];
     /** The circle being edited, whose details fill the form. */
-    circle?: CircleDetails;
+    circle?: Circle;
     submitLabel: string;
 }>();
 

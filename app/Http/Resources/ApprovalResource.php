@@ -18,7 +18,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ApprovalResource extends JsonResource
 {
     /**
-     * @return array<string, mixed>
+     * Keys ending in ? are sent only when the caller loaded them; status.value can also be "expired" (see statusFor()).
+     *
+     * @return array{id: int, type: array{value: string, label: string}, status: array{value: string, label: string}, reason: string|null, requested_at: string, can: array{decide: bool, cancel: bool}, 'user'?: UserResource, 'requester'?: UserResource|null, 'subject'?: array{name: string, description: string, url: string}}
      */
     public function toArray(Request $request): array
     {

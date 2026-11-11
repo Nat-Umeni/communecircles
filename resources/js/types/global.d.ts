@@ -1,5 +1,5 @@
 import type { route as ziggyRoute } from 'ziggy-js';
-import type { AuthUser, Option } from '@/types';
+import type { Loaded, Option, User } from '@/types';
 
 /**
  * Types $page.props and usePage().props for the props every page receives
@@ -13,7 +13,8 @@ declare module '@inertiajs/core' {
         };
         sharedPageProps: {
             auth: {
-                user: AuthUser | null;
+                /** UserResource for the member themselves, so with their email, confirmation and role. */
+                user: Loaded<User, 'email' | 'email_verified' | 'role'> | null;
             };
             locale: string;
             locales: Option[];
