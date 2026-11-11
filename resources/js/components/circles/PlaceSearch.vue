@@ -6,6 +6,7 @@ import { computed, ref, useId, useTemplateRef } from 'vue';
 import { route } from 'ziggy-js';
 import Input from '@/components/ui/form/Input.vue';
 import type { Place } from '@/types';
+import { placeLabel } from '@/utils/format';
 
 // A FormField's id and aria attributes belong on the search box, not the wrapper.
 defineOptions({ inheritAttrs: false });
@@ -13,7 +14,7 @@ defineOptions({ inheritAttrs: false });
 // The chosen town or village, or null while there's none.
 const place = defineModel<Place | null>({ required: true });
 
-const http = useHttp<{ search: string }, { places: Place[] }>({ search: place.value ? label(place.value) : '' });
+const http = useHttp<{ search: string }, { places: Place[] }>({ search: place.value ? placeLabel(place.value) : '' });
 
 const field = useTemplateRef<InstanceType<typeof Input>>('field');
 const listId = useId();
@@ -37,11 +38,6 @@ const status = computed(() => {
 
     return open.value && places.value.length === 0 ? `No towns or villages match “${http.search}”.` : '';
 });
-
-// "Totnes, England, United Kingdom", or "Vaduz, Liechtenstein" where GeoNames has no region.
-function label(found: Place): string {
-    return [found.name, found.region, found.country_name].filter(Boolean).join(', ');
-}
 
 // Searches once typing stops, so each word isn't a request. A search still waiting is for text that's gone, so it's
 // dropped, and the list closes until the new one is back.
@@ -79,7 +75,7 @@ async function search(): Promise<void> {
 
 function choose(found: Place): void {
     place.value = found;
-    http.search = label(found);
+    http.search = placeLabel(found);
     open.value = false;
 }
 
@@ -151,7 +147,7 @@ function enter(event: KeyboardEvent): void {
                 @mousedown.prevent
                 @click="choose(found)"
             >
-                {{ label(found) }}
+                {{ placeLabel(found) }}
             </li>
         </ul>
         <p role="status" class="mt-2 text-sm empty:hidden" :class="failure ? 'font-semibold text-danger' : 'text-muted-foreground'">{{ status }}</p>

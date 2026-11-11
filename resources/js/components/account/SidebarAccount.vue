@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
 import type { Role } from '@/types';
+import { fullName } from '@/utils/format';
 
 const page = usePage();
 
@@ -28,7 +29,7 @@ const badgeVariants: Partial<Record<Role, 'accent' | 'primary'>> = {
             <UserRound class="size-5" />
         </span>
         <div class="flex min-w-0 flex-1 flex-col">
-            <span class="truncate font-heading font-bold text-heading">{{ user.first_name }} {{ user.last_name }}</span>
+            <span class="truncate font-heading font-bold text-heading">{{ fullName(user) }}</span>
             <span class="truncate text-sm text-muted-foreground">{{ user.email }}</span>
             <Badge v-if="badgeVariants[user.role.value]" :variant="badgeVariants[user.role.value]" class="mt-1 self-start">{{ user.role.label }}</Badge>
         </div>

@@ -2,6 +2,7 @@
 import Badge from '@/components/ui/Badge.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
 import type { Loaded, User } from '@/types';
+import { fullName } from '@/utils/format';
 
 // NOTE: the table scrolls sideways on its own when a phone is too narrow for it, so the page doesn't.
 defineProps<{
@@ -23,7 +24,7 @@ defineProps<{
             <tbody class="divide-y divide-border">
                 <tr v-for="member in members" :key="member.membership.id">
                     <!-- TODO: link to their profile once profiles exist. -->
-                    <td class="py-3 pr-4 font-semibold whitespace-nowrap">{{ member.first_name }} {{ member.last_name }}</td>
+                    <td class="py-3 pr-4 font-semibold whitespace-nowrap">{{ fullName(member) }}</td>
                     <td class="py-3 pr-4">
                         <Badge variant="secondary">{{ member.membership.role.label }}</Badge>
                     </td>

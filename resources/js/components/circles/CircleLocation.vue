@@ -2,6 +2,7 @@
 import { MapPin } from '@lucide/vue';
 import { computed } from 'vue';
 import type { Location } from '@/types';
+import { placeLabel } from '@/utils/format';
 
 const props = defineProps<{
     location: Location;
@@ -16,7 +17,7 @@ const text = computed(() => {
         return `${name}, ${country}`;
     }
 
-    const town = [place.name, place.region, country].filter(Boolean).join(', ');
+    const town = placeLabel(place);
 
     return name === null ? town : `${name}, near ${town}`;
 });

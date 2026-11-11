@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card.vue';
 import Pagination from '@/components/ui/Pagination.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
 import type { Approval, Loaded, Paginated } from '@/types';
+import { fullName } from '@/utils/format';
 
 // From ApprovalController::index, for staff: everything waiting for their approval, the longest-waiting first.
 defineProps<{
@@ -31,7 +32,7 @@ defineProps<{
             <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <Badge variant="secondary" data-type>{{ approval.type.label }}</Badge>
                 <p class="text-sm text-muted-foreground">
-                    {{ approval.requester ? `Asked by ${approval.requester.first_name} ${approval.requester.last_name}` : 'Asked by a deleted account' }},
+                    {{ approval.requester ? `Asked by ${fullName(approval.requester)}` : 'Asked by a deleted account' }},
                     <TimeAgo :datetime="approval.requested_at" />
                 </p>
             </div>

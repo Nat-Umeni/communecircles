@@ -18,6 +18,7 @@ import CountPill from '@/components/ui/CountPill.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
 import type { Approval, Circle, CirclePermissions, Loaded, User } from '@/types';
+import { fullName } from '@/utils/format';
 
 // From CircleController::show.
 const props = defineProps<{
@@ -38,10 +39,6 @@ const props = defineProps<{
 }>();
 
 const joining = useForm({});
-
-function fullName(user: User): string {
-    return `${user.first_name} ${user.last_name}`;
-}
 
 // Whether the invite dialog is open; the header's Create menu opens it.
 const inviting = ref(false);
