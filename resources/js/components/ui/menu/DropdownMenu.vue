@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, useId } from 'vue';
 import { useEventListener } from '@/composables/useEventListener';
+import { useMenuKeyboard } from '@/composables/ui/useMenuKeyboard';
 
 withDefaults(
     defineProps<{
@@ -20,15 +21,8 @@ const trigger = ref<HTMLButtonElement | null>(null);
 const panel = ref<HTMLElement | null>(null);
 const panelId = useId();
 
-function items(): HTMLElement[] {
-    return Array.from(panel.value?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
-}
-
-/** Focus the item at the given position, wrapping around at either end. */
-function focusItem(index: number): void {
-    const list = items();
-    list[(index + list.length) % list.length]?.focus();
-}
+// Escape closes the menu and puts focus back on its button.
+const { focusItem, onKeydown } = useMenuKeyboard(panel, open, () => hide(true));
 
 async function show(): Promise<void> {
     open.value = true;
@@ -49,37 +43,6 @@ function toggle(): void {
         hide();
     } else {
         void show();
-    }
-}
-
-function onKeydown(event: KeyboardEvent): void {
-    if (!open.value) {
-        return;
-    }
-
-    const current = items().indexOf(document.activeElement as HTMLElement);
-
-    switch (event.key) {
-        case 'Escape':
-            event.preventDefault();
-            hide(true);
-            break;
-        case 'ArrowDown':
-            event.preventDefault();
-            focusItem(current + 1);
-            break;
-        case 'ArrowUp':
-            event.preventDefault();
-            focusItem(current - 1);
-            break;
-        case 'Home':
-            event.preventDefault();
-            focusItem(0);
-            break;
-        case 'End':
-            event.preventDefault();
-            focusItem(-1);
-            break;
     }
 }
 
