@@ -56,6 +56,26 @@ describe('PaginatedList', () => {
         expect(area.classes()).toContain('scroll-mt-24');
     });
 
+    it('brings what it is given into view instead of itself, e.g. a search bar above it', async () => {
+        const searchBar = document.createElement('form');
+        document.body.append(searchBar);
+        const wrapper = mount(PaginatedList, {
+            props: { paginator: paginated(['a'], { current_page: 1, last_page: 2 }), label: 'Popular circles', anchor: searchBar },
+            slots: { default: '<ul data-items><li>Seed Exchange</li></ul>' },
+        });
+        const area = wrapper.get<HTMLElement>('[role="region"]').element;
+        const scrollTo = vi.spyOn(area, 'scrollTo');
+        const listIntoView = vi.spyOn(area, 'scrollIntoView');
+        const searchBarIntoView = vi.spyOn(searchBar, 'scrollIntoView');
+
+        await wrapper.setProps({ paginator: paginated(['c'], { current_page: 2, last_page: 2 }) });
+
+        expect(scrollTo).toHaveBeenCalledExactlyOnceWith({ top: 0, behavior: 'smooth' });
+        expect(searchBarIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'nearest', behavior: 'smooth' });
+        expect(listIntoView).not.toHaveBeenCalled();
+        searchBar.remove();
+    });
+
     it('moves straight there for someone who prefers less motion', async () => {
         vi.spyOn(window, 'matchMedia').mockImplementation((query) => ({ matches: query === '(prefers-reduced-motion: reduce)' }) as MediaQueryList);
         const wrapper = list(paginated(['a'], { current_page: 1, last_page: 2 }));

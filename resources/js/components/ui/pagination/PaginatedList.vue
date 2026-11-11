@@ -12,14 +12,16 @@ const props = withDefaults(
         only?: string[];
         /** "card" for a list inside a card (up to 24rem high), "page" for a page's main list (up to 70% of the screen). */
         size?: 'card' | 'page';
+        /** What to bring into view for a new page instead of the list itself, e.g. a search bar above it. */
+        anchor?: HTMLElement | null;
     }>(),
-    { only: () => [], size: 'card' },
+    { only: () => [], size: 'card', anchor: null },
 );
 
 // A list scrolls on its own (both ways, so a wide table scrolls sideways here too), so its pages stay in view below
-// it. Paging keeps the page where it is, so for the new page the list glides back to its top, and its top edge comes
-// into view if it was above the screen (scroll-mt-24 keeps it clear of the sticky header). Straight there for anyone
-// whose system asks for less motion.
+// it. Paging keeps the page where it is, so for the new page the list glides back to its top, and its top edge (or the
+// anchor) comes into view if it was above the screen; give either scroll-mt-24 to keep it clear of the sticky header.
+// Straight there for anyone whose system asks for less motion.
 const area = useTemplateRef<HTMLElement>('area');
 
 watch(
@@ -28,7 +30,7 @@ watch(
         const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 
         area.value!.scrollTo({ top: 0, behavior });
-        area.value!.scrollIntoView({ block: 'nearest', behavior });
+        (props.anchor ?? area.value!).scrollIntoView({ block: 'nearest', behavior });
     },
 );
 </script>

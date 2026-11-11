@@ -96,7 +96,7 @@ describe('circles/Index', () => {
         await box.setValue('s');
         await vi.advanceTimersByTimeAsync(100);
         await box.setValue('seed');
-        await vi.advanceTimersByTimeAsync(299);
+        await vi.advanceTimersByTimeAsync(449);
 
         expect(fakeRouter.get).not.toHaveBeenCalled();
 
@@ -111,7 +111,7 @@ describe('circles/Index', () => {
 
         await wrapper.get('input[name="search"]').setValue('seed');
         await wrapper.get('form[role="search"]').trigger('submit');
-        await vi.advanceTimersByTimeAsync(300);
+        await vi.advanceTimersByTimeAsync(450);
 
         expect(fakeRouter.get).toHaveBeenCalledExactlyOnceWith('/circles.index', { search: 'seed' }, { only: ['circles', 'filters'], preserveState: true, preserveScroll: true });
     });
@@ -125,7 +125,7 @@ describe('circles/Index', () => {
 
         expect(fakeRouter.get).toHaveBeenCalledExactlyOnceWith('/circles.index', {}, { only: ['circles', 'filters'], preserveState: true, preserveScroll: true });
 
-        await vi.advanceTimersByTimeAsync(300);
+        await vi.advanceTimersByTimeAsync(450);
 
         expect(fakeRouter.get).toHaveBeenCalledOnce();
         expect(wrapper.get<HTMLInputElement>('input[name="search"]').element.value).toBe('');
@@ -148,12 +148,16 @@ describe('circles/Index', () => {
         expect(wrapper.text()).not.toContain('No circles yet');
     });
 
-    it('pages through the popular circles in a list of their own, reloading only the circles', () => {
+    it('pages through the popular circles in a list of their own, reloading only the circles and bringing the search bar back into view', async () => {
         const page = paginated(circles.data, { last_page: 2, total: 30, path: '/circles' });
         const wrapper = index({ circles: page });
         const list = wrapper.getComponent(PaginatedList);
 
         expect(list.props()).toEqual(expect.objectContaining({ paginator: page, label: 'Popular circles', only: ['circles'], size: 'page' }));
+        // The search bar is a template ref, filled in once the page has rendered.
+        await wrapper.vm.$nextTick();
+        expect(list.props('anchor')).toBe(wrapper.get('form[role="search"]').element);
+        expect(wrapper.get('form[role="search"]').classes()).toContain('scroll-mt-24');
         expect(list.get('[role="region"]').findAllComponents(CircleCard)).toHaveLength(2);
         expect(wrapper.get('nav[aria-label="Popular circles pages"]').find('a[href="/circles?page=2"]').exists()).toBe(true);
     });

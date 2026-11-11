@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, useTemplateRef } from 'vue';
 import { route } from 'ziggy-js';
 import { useAuth } from '@/composables/auth/useAuth';
 import { useDebouncedFn } from '@/composables/useDebouncedFn';
@@ -38,9 +38,11 @@ const lists: Option[] = [
 // own circles unless they have none, or are searching or paging Popular (its links load this page afresh).
 const list = ref(props.your_circles?.length && !props.filters.search && props.circles.current_page === 1 ? 'yours' : 'popular');
 /** How long typing has to stop before the search is sent. */
-const SEARCH_PAUSE_MS = 300;
+const SEARCH_PAUSE_MS = 450;
 
 const search = ref(props.filters.search);
+// A new page of Popular brings the search bar back into view, rather than just the list's top.
+const searchBar = useTemplateRef<HTMLFormElement>('searchBar');
 const language = ref(props.locale);
 
 // Searching reloads only the circles and the search they're for, keeping the page where it is. Typing searches once it
@@ -79,10 +81,10 @@ const findSoon = useDebouncedFn(find, SEARCH_PAUSE_MS);
             <Card v-if="!your_circles?.length" title="You're not in any circles yet" description="Find one under Popular, or start your own from the + menu." />
         </template>
         <template v-else>
-            <form role="search" @submit.prevent="find">
+            <form ref="searchBar" role="search" class="scroll-mt-24" @submit.prevent="find">
                 <SearchInput v-model="search" name="search" aria-label="Search circles" placeholder="Search circles by name" @update:model-value="findSoon.call()" @clear="find" />
             </form>
-            <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page">
+            <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page" :anchor="searchBar">
                 <div class="flex flex-col gap-6">
                     <CircleCard v-for="circle in circles.data" :key="circle.public_id" :circle="circle" />
                 </div>
