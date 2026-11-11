@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { HttpCancelledError, HttpResponseError } from '@inertiajs/core';
-import { useHttp } from '@inertiajs/vue3';
 import { X } from '@lucide/vue';
 import { computed, ref, useId, useTemplateRef } from 'vue';
-import { route } from 'ziggy-js';
+import { usePlaceSearch } from '@/composables/usePlaceSearch';
 import Input from '@/components/ui/form/Input.vue';
 import type { Place } from '@/types';
 import { placeLabel } from '@/utils/format';
@@ -14,21 +12,18 @@ defineOptions({ inheritAttrs: false });
 // The chosen town or village, or null while there's none.
 const place = defineModel<Place | null>({ required: true });
 
-const http = useHttp<{ search: string }, { places: Place[] }>({ search: place.value ? placeLabel(place.value) : '' });
+const { text, places, searching, failure, search } = usePlaceSearch(place.value ? placeLabel(place.value) : '');
 
 const field = useTemplateRef<InstanceType<typeof Input>>('field');
 const listId = useId();
 const open = ref(false);
 // The place picked out with the arrow keys, or -1 for none.
 const highlighted = ref(-1);
-const failure = ref<string | null>(null);
-let pause: ReturnType<typeof setTimeout> | undefined;
 
-const places = computed(() => http.response?.places ?? []);
 const listShown = computed(() => open.value && places.value.length > 0);
 
 const status = computed(() => {
-    if (http.processing) {
+    if (searching.value) {
         return 'Searching…';
     }
 
@@ -36,52 +31,32 @@ const status = computed(() => {
         return failure.value;
     }
 
-    return open.value && places.value.length === 0 ? `No towns or villages match “${http.search}”.` : '';
+    return open.value && places.value.length === 0 ? `No towns or villages match “${text.value}”.` : '';
 });
 
-// Searches once typing stops, so each word isn't a request. A search still waiting is for text that's gone, so it's
-// dropped, and the list closes until the new one is back.
-function typed(text: string): void {
-    http.search = text;
-
+// Typing unpicks the chosen place and closes the list until the new search is back.
+async function typed(value: string): Promise<void> {
     if (place.value) {
         place.value = null;
     }
 
-    http.cancel();
-    clearTimeout(pause);
-    failure.value = null;
     open.value = false;
 
-    if (text.trim().length >= 2) {
-        pause = setTimeout(search, 300);
-    }
-}
-
-async function search(): Promise<void> {
-    try {
-        await http.get(route('places.search'));
+    if (await search(value)) {
         highlighted.value = -1;
         open.value = true;
-    } catch (error) {
-        if (error instanceof HttpCancelledError) {
-            return;
-        }
-
-        failure.value =
-            error instanceof HttpResponseError ? JSON.parse(error.response.data).message : "Place search isn't available right now. Try again in a little while, or leave it empty.";
     }
 }
 
 function choose(found: Place): void {
     place.value = found;
-    http.search = placeLabel(found);
+    text.value = placeLabel(found);
     open.value = false;
 }
 
 function clear(): void {
     place.value = null;
-    http.search = '';
+    text.value = '';
     field.value?.$el.focus();
 }
 
@@ -105,7 +80,7 @@ function enter(event: KeyboardEvent): void {
         <Input
             ref="field"
             v-bind="$attrs"
-            :model-value="http.search"
+            :model-value="text"
             type="text"
             role="combobox"
             autocomplete="off"
