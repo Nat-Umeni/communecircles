@@ -40,7 +40,7 @@ class CircleController extends Controller
      */
     public function index(Request $request): Response
     {
-        $search = $request->string('search')->trim()->value();
+        $search = $request->string('search')->value();
 
         return Inertia::render('circles/Index', [
             'circles' => Circle::query()
@@ -108,12 +108,14 @@ class CircleController extends Controller
      * Show the circle's page, with what the viewer can do there. Until staff approve the circle, the page also says
      * where its approval stands, which only its members and staff can see. It also shows the viewer their own request
      * to join or invite, and shows staff and the circle's owners and admins the requests and invites still waiting.
+     * Those who can see the members can search them by name (User::search(), through the circle's own memberships).
      */
     public function show(Request $request, Circle $circle): Response
     {
         Gate::authorize('view', $circle);
 
         $viewer = $request->user();
+        $membersSearch = $request->string('members_search')->value();
         $circle->loadCount('members');
 
         return Inertia::render('circles/Show', [
@@ -142,9 +144,11 @@ class CircleController extends Controller
                 : null,
             'members' => fn () => Gate::allows('viewMembers', $circle)
                 ? $circle->membersByRole()
+                    ->when($membersSearch !== '', fn (Builder $query) => $query->search($membersSearch))
                     ->paginate(self::MEMBERS_PER_PAGE, pageName: 'members_page')->onEachSide(1)->withQueryString()
                     ->through(fn (User $member): UserResource => $member->toResource())
                 : null,
+            'filters' => ['members_search' => $membersSearch],
         ]);
     }
 

@@ -190,6 +190,16 @@ class UserTest extends TestCase
         $this->assertEqualsCanonicalizing([$admin->id, $superAdmin->id], User::query()->staff()->pluck('id')->all());
     }
 
+    public function test_search_finds_people_by_their_first_and_last_name_but_not_their_email(): void
+    {
+        $grace = User::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper']);
+        $ada = User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']);
+        User::factory()->create(['first_name' => 'Alan', 'last_name' => 'Turing', 'email' => 'grace.hopper@example.com']);
+
+        $this->assertSame([$grace->id], User::query()->search('grace hopper')->pluck('id')->all());
+        $this->assertSame([$ada->id], User::query()->search('lovelace')->pluck('id')->all());
+    }
+
     public function test_logs_a_new_member_joining_without_their_password(): void
     {
         $user = User::factory()->create(['first_name' => 'Ada', 'email' => 'ada@example.com']);

@@ -9,6 +9,7 @@ use App\Enums\Approval\ApprovalType;
 use App\Enums\Circle\CircleRole;
 use App\Models\Concerns\HasApprovals;
 use App\Models\Concerns\HasPublicId;
+use App\Models\Concerns\HasSearch;
 use App\Models\Contracts\Approvable;
 use Database\Factories\CircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,7 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class Circle extends Model implements Approvable
 {
     /** @use HasFactory<CircleFactory> */
-    use HasApprovals, HasFactory, HasPublicId, LogsActivity;
+    use HasApprovals, HasFactory, HasPublicId, HasSearch, LogsActivity;
 
     /**
      * Record changes to the circle's details and location in the audit log, with who made them; only what changed.
@@ -99,13 +100,11 @@ class Circle extends Model implements Approvable
     }
 
     /**
-     * Circles with the text anywhere in their name or description, whatever the case. The two are grouped, so this
-     * can't widen another condition such as approved().
+     * What search() looks through (HasSearch).
      */
-    #[Scope]
-    protected function search(Builder $query, string $text): void
+    protected function searchableColumns(): array
     {
-        $query->whereAny(['name', 'description'], 'like', "%{$text}%");
+        return ['name', 'description'];
     }
 
     public function owners(): BelongsToMany

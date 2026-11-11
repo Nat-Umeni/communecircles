@@ -660,6 +660,49 @@ class CircleControllerTest extends TestCase
             ->where('members.prev_page_url', fn (string $url): bool => str_contains($url, 'members_page=1')));
     }
 
+    public function test_searches_the_members_by_name_finding_only_people_in_the_circle(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $grace = User::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper']);
+        $circle->members()->attach($grace, ['role' => CircleRole::Member]);
+        $circle->members()->attach(User::factory()->create(['first_name' => 'Ada', 'last_name' => 'Lovelace']), ['role' => CircleRole::Member]);
+        Circle::factory()->create()->members()->attach(User::factory()->create(['first_name' => 'Grace', 'last_name' => 'Hopper']), ['role' => CircleRole::Member]);
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'members_search' => '  grace hop ']));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('members.total', 1)
+            ->where('members.data.0.membership.id', $circle->membershipOf($grace)->id)
+            ->where('filters', ['members_search' => 'grace hop']));
+    }
+
+    public function test_keeps_the_member_search_on_its_pages(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $circle->members()->attach(User::factory()->count(21)->create(['first_name' => 'Grace']), ['role' => CircleRole::Member]);
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'members_search' => 'grace']));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('members.total', 21)
+            ->where('members.next_page_url', fn (string $url): bool => str_contains($url, 'members_page=2') && str_contains($url, 'members_search=grace')));
+    }
+
+    public function test_shows_every_member_without_a_search(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $circle->members()->attach(User::factory()->count(2)->create(), ['role' => CircleRole::Member]);
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'members_search' => '   ']));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('members.total', 3)
+            ->where('filters', ['members_search' => '']));
+    }
+
     public function test_reloading_one_list_only_looks_that_list_up(): void
     {
         $circle = Circle::factory()->create();

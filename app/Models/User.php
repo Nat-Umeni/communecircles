@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Approval\ApprovalType;
 use App\Enums\User\Role;
+use App\Models\Concerns\HasSearch;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
 use Database\Factories\UserFactory;
@@ -26,7 +27,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, LogsActivity, Notifiable;
+    use HasFactory, HasSearch, LogsActivity, Notifiable;
 
     /**
      * Stands in for the password's old and new values in the audit log.
@@ -93,6 +94,14 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'role' => Role::class,
         ];
+    }
+
+    /**
+     * What search() looks through (HasSearch): a person's name; not their email, which most people can't see.
+     */
+    protected function searchableColumns(): array
+    {
+        return ['first_name', 'last_name'];
     }
 
     /**
