@@ -1,7 +1,7 @@
 import type { Component } from 'vue';
 
 /**
- * A member's site-wide role: the value of App\Enums\Role. Circle roles like chief belong to circle memberships, not here.
+ * A member's site-wide role: the value of App\Enums\User\Role. Circle roles like chief belong to circle memberships, not here.
  */
 export type Role = 'user' | 'admin' | 'super_admin';
 
@@ -14,7 +14,7 @@ export interface AuthUser {
     email: string;
     /** Whether they've clicked the link in their confirmation email. */
     email_verified: boolean;
-    /** The role's value and its display label, from App\Enums\Role::label(); internal is true for staff. */
+    /** The role's value and its display label, from App\Enums\User\Role::label(); internal is true for staff. */
     role: {
         value: Role;
         label: string;
@@ -64,7 +64,7 @@ export interface CircleSummary extends CircleDetails {
 }
 
 /**
- * Where an approval stands: the value of App\Enums\ApprovalStatus, with its label.
+ * Where an approval stands: the value of App\Enums\Approval\ApprovalStatus, with its label.
  */
 export interface ApprovalStatus {
     value: 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -144,7 +144,7 @@ export interface CircleMember {
     /** Their membership's id, not their account's. */
     id: number;
     name: string;
-    /** The value of App\Enums\CircleRole and its label. */
+    /** The value of App\Enums\Circle\CircleRole and its label. */
     role: { value: 'owner' | 'admin' | 'member'; label: string };
     joined_at: string;
 }

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Models;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
 use App\Enums\AuditEvent;
-use App\Enums\CircleRole;
-use App\Enums\Role;
+use App\Enums\Circle\CircleRole;
+use App\Enums\User\Role;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;

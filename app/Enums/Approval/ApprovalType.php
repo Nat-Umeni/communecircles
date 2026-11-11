@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enums;
+namespace App\Enums\Approval;
 
 /**
  * What an approval is for. Who decides each one is in ApprovalPolicy.

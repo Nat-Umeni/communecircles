@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Http\Controllers;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
-use App\Enums\CircleRole;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
+use App\Enums\Circle\CircleRole;
 use App\Models\Circle;
 use App\Models\User;
 use App\Notifications\Circle\InviteReceived;

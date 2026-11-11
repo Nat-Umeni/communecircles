@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Models;
 
-use App\Enums\CircleRole;
+use App\Enums\Circle\CircleRole;
 use App\Models\Circle;
 use App\Models\CircleUser;
 use App\Models\User;

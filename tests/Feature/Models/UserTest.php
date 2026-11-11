@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Models;
 
-use App\Enums\ApprovalType;
-use App\Enums\CircleRole;
-use App\Enums\Role;
+use App\Enums\Approval\ApprovalType;
+use App\Enums\Circle\CircleRole;
+use App\Enums\User\Role;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\CircleUser;

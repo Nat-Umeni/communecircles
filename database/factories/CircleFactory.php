@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
-use App\Enums\ApprovalStatus;
+use App\Enums\Approval\ApprovalStatus;
 use App\Models\Approval;
 use App\Models\Circle;
 use Illuminate\Database\Eloquent\Factories\Factory;

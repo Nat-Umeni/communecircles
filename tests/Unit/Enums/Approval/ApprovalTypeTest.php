@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Enums;
+namespace Tests\Unit\Enums\Approval;
 
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

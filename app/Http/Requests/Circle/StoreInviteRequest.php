@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Circle;
 
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Circle;
 use App\Models\User;
 use Closure;

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Approvals of every type (App\Enums\ApprovalType), each for the thing waiting for approval and about one
+        // Approvals of every type (App\Enums\Approval\ApprovalType), each for the thing waiting for approval and about one
         // person: one per type, thing and person, reopened when someone asks again. Their history is in the audit log.
         Schema::create('approvals', function (Blueprint $table) {
             $table->id();

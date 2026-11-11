@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Enums;
+namespace Tests\Unit\Enums\Circle;
 
-use App\Enums\CircleRole;
+use App\Enums\Circle\CircleRole;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

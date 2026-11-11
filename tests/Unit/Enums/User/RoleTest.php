@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Enums;
+namespace Tests\Unit\Enums\User;
 
-use App\Enums\Role;
+use App\Enums\User\Role;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

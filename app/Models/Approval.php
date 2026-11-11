@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
 use App\Enums\AuditEvent;
 use App\Models\Contracts\Approvable;
 use Database\Factories\ApprovalFactory;
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * An approval of some type (App\Enums\ApprovalType) for the thing waiting for approval (an Approvable), about one
+ * An approval of some type (App\Enums\Approval\ApprovalType) for the thing waiting for approval (an Approvable), about one
  * person. Every request and decision is also written to the audit log, against the thing waiting for approval.
  */
 #[Fillable(['type', 'user_id', 'status', 'requested_by', 'decided_by', 'decided_at', 'reason'])]

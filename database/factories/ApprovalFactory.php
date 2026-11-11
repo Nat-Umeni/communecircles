@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;

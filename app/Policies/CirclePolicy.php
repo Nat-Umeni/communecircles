@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;

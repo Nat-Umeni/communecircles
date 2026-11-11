@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Auth;
 
-use App\Enums\Role;
+use App\Enums\User\Role;
 use App\Models\User;
 use App\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;

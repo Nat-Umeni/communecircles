@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Http\Resources;
 
-use App\Enums\ApprovalType;
-use App\Enums\CircleRole;
-use App\Enums\Role;
+use App\Enums\Approval\ApprovalType;
+use App\Enums\Circle\CircleRole;
+use App\Enums\User\Role;
 use App\Http\Resources\ApprovalResource;
 use App\Models\Approval;
 use App\Models\Circle;

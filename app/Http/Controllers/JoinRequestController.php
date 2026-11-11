@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Notifications\Circle\JoinRequestReceived;

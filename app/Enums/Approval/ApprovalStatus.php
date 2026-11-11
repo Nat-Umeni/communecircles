@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Enums;
+namespace App\Enums\Approval;
 
 /**
  * Where the thing waiting for approval stands.

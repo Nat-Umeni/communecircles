@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\CircleRole;
+use App\Enums\Circle\CircleRole;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;

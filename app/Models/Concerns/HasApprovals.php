@@ -2,7 +2,7 @@
 
 namespace App\Models\Concerns;
 
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Approval;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;

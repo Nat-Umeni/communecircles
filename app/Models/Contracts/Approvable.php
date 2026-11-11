@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 interface Approvable
 {
     /**
-     * All its approvals, of every type (App\Enums\ApprovalType).
+     * All its approvals, of every type (App\Enums\Approval\ApprovalType).
      *
      * @return MorphMany<Approval, $this>
      */

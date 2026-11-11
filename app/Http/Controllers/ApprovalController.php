@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalType;
 use App\Http\Requests\Approval\RejectApprovalRequest;
 use App\Http\Resources\ApprovalResource;
 use App\Models\Approval;

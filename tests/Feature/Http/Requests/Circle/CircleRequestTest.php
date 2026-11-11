@@ -3,7 +3,7 @@
 namespace Tests\Feature\Http\Requests\Circle;
 
 use App\DTO\GeoNames\Place;
-use App\Enums\CircleRole;
+use App\Enums\Circle\CircleRole;
 use App\Exceptions\GeoNamesException;
 use App\Models\Circle;
 use App\Models\User;

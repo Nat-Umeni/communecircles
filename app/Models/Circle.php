@@ -4,9 +4,9 @@ namespace App\Models;
 
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
-use App\Enums\CircleRole;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
+use App\Enums\Circle\CircleRole;
 use App\Models\Concerns\HasApprovals;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Contracts\Approvable;

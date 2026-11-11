@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Notifications\Circle;
 
-use App\Enums\Role;
+use App\Enums\User\Role;
 use App\Models\Circle;
 use App\Models\User;
 use App\Notifications\Circle\NewCircleAwaitingApproval;

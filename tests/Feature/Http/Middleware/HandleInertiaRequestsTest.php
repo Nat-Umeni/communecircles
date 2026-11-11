@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Http\Middleware;
 
-use App\Enums\Role;
+use App\Enums\User\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Inertia\Testing\AssertableInertia;

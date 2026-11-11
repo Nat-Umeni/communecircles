@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Http\Resources;
 
-use App\Enums\CircleRole;
-use App\Enums\Role;
+use App\Enums\Circle\CircleRole;
+use App\Enums\User\Role;
 use App\Http\Resources\UserResource;
 use App\Models\Circle;
 use App\Models\User;

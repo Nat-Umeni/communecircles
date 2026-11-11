@@ -2,8 +2,8 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\ApprovalType;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\Approval\ApprovalType;
 use App\Models\Approval;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

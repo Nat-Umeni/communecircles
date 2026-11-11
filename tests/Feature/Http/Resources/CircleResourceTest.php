@@ -3,7 +3,7 @@
 namespace Tests\Feature\Http\Resources;
 
 use App\DTO\Location;
-use App\Enums\CircleRole;
+use App\Enums\Circle\CircleRole;
 use App\Http\Resources\CircleResource;
 use App\Models\Circle;
 use App\Models\User;

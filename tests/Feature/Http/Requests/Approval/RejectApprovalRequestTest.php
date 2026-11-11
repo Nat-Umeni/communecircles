@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Http\Requests\Approval;
 
-use App\Enums\ApprovalStatus;
-use App\Enums\Role;
+use App\Enums\Approval\ApprovalStatus;
+use App\Enums\User\Role;
 use App\Models\Circle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;

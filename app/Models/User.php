@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\ApprovalType;
-use App\Enums\Role;
+use App\Enums\Approval\ApprovalType;
+use App\Enums\User\Role;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
 use Database\Factories\UserFactory;
