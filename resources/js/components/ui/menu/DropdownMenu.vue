@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue';
+import { nextTick, ref, useId } from 'vue';
+import { useEventListener } from '@/composables/useEventListener';
 
 withDefaults(
     defineProps<{
@@ -89,21 +90,18 @@ function onPanelClick(event: MouseEvent): void {
     }
 }
 
-// Tabbing out closes the menu. Clicks elsewhere are handled by onPointerdown, because Safari doesn't focus clicked buttons.
+// Tabbing out closes the menu. Clicks elsewhere are handled by the pointerdown listener below, because Safari doesn't focus clicked buttons.
 function onFocusout(event: FocusEvent): void {
     if (event.relatedTarget && !root.value?.contains(event.relatedTarget as Node)) {
         hide();
     }
 }
 
-function onPointerdown(event: PointerEvent): void {
+useEventListener(document, 'pointerdown', (event) => {
     if (open.value && !root.value?.contains(event.target as Node)) {
         hide();
     }
-}
-
-onMounted(() => document.addEventListener('pointerdown', onPointerdown));
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerdown));
+});
 </script>
 
 <template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ShieldCheck } from '@lucide/vue';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { ref } from 'vue';
 import { useAuth } from '@/composables/auth/useAuth';
+import { useEventListener } from '@/composables/useEventListener';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import SidebarAccount from '@/components/account/SidebarAccount.vue';
 import NavItem from '@/components/ui/NavItem.vue';
@@ -12,14 +13,11 @@ const open = defineModel<boolean>('open', { required: true });
 const search = ref('');
 const { staff } = useAuth();
 
-function closeOnEscape(event: KeyboardEvent): void {
+useEventListener(window, 'keydown', (event) => {
     if (event.key === 'Escape') {
         open.value = false;
     }
-}
-
-onMounted(() => window.addEventListener('keydown', closeOnEscape));
-onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
+});
 
 // NOTE: the root div is "contents" so the overlay and <aside> stay direct flex children of the layout, and lg:sticky still works.
 </script>
