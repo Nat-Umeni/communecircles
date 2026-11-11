@@ -135,6 +135,10 @@ describe('circles/Index', () => {
         expect(index().get('form[role="search"]').findAll('button').map((button) => button.text())).not.toContain('Search');
     });
 
+    it('says what the search looks through', () => {
+        expect(index().get('input[name="search"]').attributes('placeholder')).toBe('Search circles by name or description');
+    });
+
     it('keeps the current search in the box', () => {
         const wrapper = index({ filters: { search: 'seed' } });
 

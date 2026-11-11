@@ -136,11 +136,25 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page->where('circles.data.0.location', Location::at($this->totnes())->toArray()));
     }
 
+    public function test_finds_circles_whose_description_contains_the_search(): void
+    {
+        Circle::factory()->create(['name' => 'Allotment', 'description' => 'Sharing seeds and tools.']);
+        Circle::factory()->create(['name' => 'Repair Café', 'description' => 'Fixing things together.']);
+
+        $response = $this->get(route('circles.index', ['search' => 'seeds']));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('circles.data', 1)
+            ->where('circles.data.0.name', 'Allotment'));
+    }
+
     public function test_lists_and_searches_only_approved_circles(): void
     {
         Circle::factory()->create(['name' => 'Exchange']);
         Circle::factory()->pending()->create(['name' => 'Exchange, waiting']);
         Circle::factory()->rejected()->create(['name' => 'Exchange, rejected']);
+        // Found by its description, so searching either column mustn't let a circle staff haven't approved through.
+        Circle::factory()->pending()->create(['name' => 'Allotment', 'description' => 'Exchange plants and seeds.']);
 
         $list = $this->get(route('circles.index'));
         $search = $this->get(route('circles.index', ['search' => 'Exch']));

@@ -35,8 +35,8 @@ class CircleController extends Controller
     private const int MEMBERS_PER_PAGE = 20;
 
     /**
-     * List the approved circles, most members first, a page at a time, optionally only those whose name contains the
-     * search.
+     * List the approved circles, most members first, a page at a time, optionally only those whose name or description
+     * contains the search (Circle::search()).
      */
     public function index(Request $request): Response
     {
@@ -46,7 +46,7 @@ class CircleController extends Controller
             'circles' => Circle::query()
                 ->approved()
                 ->withCount('members')
-                ->when($search !== '', fn (Builder $query) => $query->whereLike('name', "%{$search}%"))
+                ->when($search !== '', fn (Builder $query) => $query->search($search))
                 ->orderByDesc('members_count')
                 ->orderBy('name')
                 ->paginate(self::CIRCLES_PER_PAGE)

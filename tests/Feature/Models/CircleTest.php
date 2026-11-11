@@ -267,6 +267,15 @@ class CircleTest extends TestCase
         ], $circle->approvalSummary());
     }
 
+    public function test_search_finds_circles_with_the_text_in_their_name_or_description_whatever_the_case(): void
+    {
+        $byName = Circle::factory()->create(['name' => 'Seed Exchange', 'description' => 'Swapping what grows well here.']);
+        $byDescription = Circle::factory()->create(['name' => 'Allotment', 'description' => 'Sharing seeds and tools.']);
+        Circle::factory()->create(['name' => 'Repair Café', 'description' => 'Fixing things together.']);
+
+        $this->assertEqualsCanonicalizing([$byName->id, $byDescription->id], Circle::query()->search('SEED')->pluck('id')->all());
+    }
+
     public function test_approved_finds_only_approved_circles(): void
     {
         $approved = Circle::factory()->create();

@@ -82,7 +82,7 @@ const findSoon = useDebouncedFn(find, SEARCH_PAUSE_MS);
         </template>
         <template v-else>
             <form ref="searchBar" role="search" class="scroll-mt-24" @submit.prevent="find">
-                <SearchInput v-model="search" name="search" aria-label="Search circles" placeholder="Search circles by name" @update:model-value="findSoon.call()" @clear="find" />
+                <SearchInput v-model="search" name="search" aria-label="Search circles" placeholder="Search circles by name or description" @update:model-value="findSoon.call()" @clear="find" />
             </form>
             <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page" :anchor="searchBar">
                 <div class="flex flex-col gap-6">

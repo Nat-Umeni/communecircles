@@ -98,6 +98,16 @@ class Circle extends Model implements Approvable
         $query->whereRelation('approval', 'status', ApprovalStatus::Approved);
     }
 
+    /**
+     * Circles with the text anywhere in their name or description, whatever the case. The two are grouped, so this
+     * can't widen another condition such as approved().
+     */
+    #[Scope]
+    protected function search(Builder $query, string $text): void
+    {
+        $query->whereAny(['name', 'description'], 'like', "%{$text}%");
+    }
+
     public function owners(): BelongsToMany
     {
         return $this->members()->wherePivot('role', CircleRole::Owner->value);
