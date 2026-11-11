@@ -182,7 +182,7 @@ class CircleTest extends TestCase
         $this->travel(1)->hour();
         $owner = $this->memberOf($circle, CircleRole::Owner);
 
-        $members = $circle->membersByRole();
+        $members = $circle->membersByRole()->get();
 
         $this->assertSame([$owner->id, $admin->id, $longestIn->id, $newest->id], $members->modelKeys());
         $this->assertSame(CircleRole::Owner, $members->first()->pivot->role);

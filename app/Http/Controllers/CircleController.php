@@ -29,6 +29,11 @@ class CircleController extends Controller
 {
     private const int CIRCLES_PER_PAGE = 24;
 
+    /** Requests to join and invites waiting, a page of each on the circle's page. */
+    private const int WAITING_PER_PAGE = 10;
+
+    private const int MEMBERS_PER_PAGE = 20;
+
     /**
      * List the approved circles, most members first, a page at a time, optionally only those whose name contains the
      * search.
@@ -123,13 +128,23 @@ class CircleController extends Controller
             'approval' => $circle->isApproved() ? null : $circle->approval->toResource(),
             'join_request' => $circle->approvalFor(ApprovalType::JoinRequest, $viewer)?->toResource(),
             'invite' => $circle->inviteFor($viewer)?->load('requester')->toResource(),
-            'pending_join_requests' => Gate::allows('viewWaitingApprovals', $circle)
-                ? $circle->waitingApprovals(ApprovalType::JoinRequest)->toResourceCollection(ApprovalResource::class)
+            // Each list pages on its own (its own page in the URL, the others' kept), one page either side so the
+            // numbers fit in half a row, and is a closure, so reloading one list doesn't look the others up.
+            'pending_join_requests' => fn () => Gate::allows('viewWaitingApprovals', $circle)
+                ? $circle->waitingApprovals(ApprovalType::JoinRequest)
+                    ->paginate(self::WAITING_PER_PAGE, pageName: 'requests_page')->onEachSide(1)->withQueryString()
+                    ->through(fn (Approval $approval): ApprovalResource => $approval->toResource())
                 : null,
-            'pending_invites' => Gate::allows('viewWaitingApprovals', $circle)
-                ? $circle->waitingApprovals(ApprovalType::Invite)->toResourceCollection(ApprovalResource::class)
+            'pending_invites' => fn () => Gate::allows('viewWaitingApprovals', $circle)
+                ? $circle->waitingApprovals(ApprovalType::Invite)
+                    ->paginate(self::WAITING_PER_PAGE, pageName: 'invites_page')->onEachSide(1)->withQueryString()
+                    ->through(fn (Approval $approval): ApprovalResource => $approval->toResource())
                 : null,
-            'members' => Gate::allows('viewMembers', $circle) ? $circle->membersByRole()->toResourceCollection(UserResource::class) : null,
+            'members' => fn () => Gate::allows('viewMembers', $circle)
+                ? $circle->membersByRole()
+                    ->paginate(self::MEMBERS_PER_PAGE, pageName: 'members_page')->onEachSide(1)->withQueryString()
+                    ->through(fn (User $member): UserResource => $member->toResource())
+                : null,
         ]);
     }
 

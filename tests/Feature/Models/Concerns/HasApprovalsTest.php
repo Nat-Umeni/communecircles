@@ -40,7 +40,7 @@ class HasApprovalsTest extends TestCase
         $this->askToJoin($circle)->reject($this->ownerOf($circle));
         Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $this->ownerOf($circle));
 
-        $waiting = $circle->waitingApprovals(ApprovalType::JoinRequest);
+        $waiting = $circle->waitingApprovals(ApprovalType::JoinRequest)->get();
 
         $this->assertSame([$first->id, $second->id], $waiting->modelKeys());
         $this->assertTrue($waiting->every(fn (Approval $approval): bool => $approval->relationLoaded('user')));

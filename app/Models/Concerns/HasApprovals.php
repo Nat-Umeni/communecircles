@@ -5,7 +5,6 @@ namespace App\Models\Concerns;
 use App\Enums\Approval\ApprovalType;
 use App\Models\Approval;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
@@ -23,13 +22,14 @@ trait HasApprovals
     }
 
     /**
-     * Its approvals of the type still waiting for a decision, the longest-waiting first, with who each is about.
+     * Its approvals of the type still waiting for a decision, the longest-waiting first, with who each is about. A
+     * query, so it can be paged.
      *
-     * @return Collection<int, Approval>
+     * @return MorphMany<Approval, $this>
      */
-    public function waitingApprovals(ApprovalType $type): Collection
+    public function waitingApprovals(ApprovalType $type): MorphMany
     {
-        return $this->approvals()->pending()->where('type', $type)->with('user')->oldest('updated_at')->get();
+        return $this->approvals()->pending()->where('type', $type)->with('user')->oldest('updated_at');
     }
 
     /**

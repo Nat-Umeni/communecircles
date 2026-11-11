@@ -13,7 +13,9 @@ use App\Models\Circle;
 use App\Models\User;
 use App\Notifications\Circle\NewCircleAwaitingApproval;
 use Closure;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia;
@@ -333,12 +335,12 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($this->memberOf($circle, CircleRole::Admin))->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('pending_join_requests', 2)
-            ->where('pending_join_requests.0.id', $firstRequest->id)
-            ->where('pending_join_requests.0.user', ['first_name' => 'Ada', 'last_name' => 'Lovelace'])
-            ->where('pending_join_requests.0.requested_at', $firstRequest->updated_at->toIso8601String())
-            ->where('pending_join_requests.0.can.decide', true)
-            ->where('pending_join_requests.1.id', $secondRequest->id));
+            ->has('pending_join_requests.data', 2)
+            ->where('pending_join_requests.data.0.id', $firstRequest->id)
+            ->where('pending_join_requests.data.0.user', ['first_name' => 'Ada', 'last_name' => 'Lovelace'])
+            ->where('pending_join_requests.data.0.requested_at', $firstRequest->updated_at->toIso8601String())
+            ->where('pending_join_requests.data.0.can.decide', true)
+            ->where('pending_join_requests.data.1.id', $secondRequest->id));
     }
 
     public function test_someone_who_has_not_asked_sees_no_request_of_theirs_even_when_others_have_asked(): void
@@ -379,10 +381,10 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs(User::factory()->create(['role' => Role::SuperAdmin]))->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('pending_join_requests', 1)
-            ->where('pending_join_requests.0.can.decide', false)
-            ->has('pending_invites', 1)
-            ->where('pending_invites.0.can.cancel', false));
+            ->has('pending_join_requests.data', 1)
+            ->where('pending_join_requests.data.0.can.decide', false)
+            ->has('pending_invites.data', 1)
+            ->where('pending_invites.data.0.can.cancel', false));
     }
 
     /**
@@ -477,12 +479,12 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($this->memberOf($circle, CircleRole::Admin))->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('pending_invites', 2)
-            ->where('pending_invites.0.id', $firstInvite->id)
-            ->where('pending_invites.0.user', ['first_name' => 'Grace', 'last_name' => 'Hopper'])
-            ->where('pending_invites.0.requested_at', $firstInvite->updated_at->toIso8601String())
-            ->where('pending_invites.0.can.cancel', true)
-            ->where('pending_invites.1.id', $secondInvite->id));
+            ->has('pending_invites.data', 2)
+            ->where('pending_invites.data.0.id', $firstInvite->id)
+            ->where('pending_invites.data.0.user', ['first_name' => 'Grace', 'last_name' => 'Hopper'])
+            ->where('pending_invites.data.0.requested_at', $firstInvite->updated_at->toIso8601String())
+            ->where('pending_invites.data.0.can.cancel', true)
+            ->where('pending_invites.data.1.id', $secondInvite->id));
     }
 
     public function test_someone_without_an_invite_waiting_sees_none_even_when_others_are_invited(): void
@@ -534,10 +536,10 @@ class CircleControllerTest extends TestCase
         $response = $this->actingAs($admin)->get(route('circles.show', $circle));
 
         $response->assertInertia(fn (AssertableInertia $page) => $page
-            ->has('members', 4)
-            ->where('members.0.membership.id', $circle->membershipOf($owner)->id)
-            ->where('members.1.membership.id', $circle->membershipOf($admin)->id)
-            ->where('members.2', [
+            ->has('members.data', 4)
+            ->where('members.data.0.membership.id', $circle->membershipOf($owner)->id)
+            ->where('members.data.1.membership.id', $circle->membershipOf($admin)->id)
+            ->where('members.data.2', [
                 'first_name' => 'Ada',
                 'last_name' => 'Lovelace',
                 'membership' => [
@@ -546,7 +548,7 @@ class CircleControllerTest extends TestCase
                     'joined_at' => $joinedAt->toIso8601String(),
                 ],
             ])
-            ->where('members.3.membership.id', $circle->membershipOf($newest)->id));
+            ->where('members.data.3.membership.id', $circle->membershipOf($newest)->id));
     }
 
     public function test_shows_a_plain_member_who_else_is_in_the_circle_only_as_a_count(): void
@@ -559,6 +561,110 @@ class CircleControllerTest extends TestCase
         $response->assertInertia(fn (AssertableInertia $page) => $page
             ->where('circle.members_count', 2)
             ->where('members', null));
+    }
+
+    public function test_pages_the_requests_to_join_ten_at_a_time_keeping_the_other_lists_pages(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->askToJoin($circle, 11);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', [$circle, 'members_page' => 2]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->has('pending_join_requests.data', 10)
+            ->where('pending_join_requests.total', 11)
+            ->where('pending_join_requests.next_page_url', fn (string $url): bool => str_contains($url, 'requests_page=2') && str_contains($url, 'members_page=2')));
+    }
+
+    public function test_opens_a_later_page_of_the_requests_to_join(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->askToJoin($circle, 11);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', [$circle, 'requests_page' => 2]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pending_join_requests.current_page', 2)
+            ->has('pending_join_requests.data', 1));
+    }
+
+    public function test_shows_one_page_either_side_of_the_current_one_so_the_pages_fit_in_half_a_row(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->askToJoin($circle, 110);
+
+        $response = $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.show', [$circle, 'requests_page' => 6]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where(
+            'pending_join_requests.links',
+            fn ($links): bool => collect($links)->slice(1, -1)->pluck('label')->all() === ['1', '2', '...', '5', '6', '7', '...', '10', '11'],
+        ));
+    }
+
+    public function test_shows_one_page_either_side_for_invites_and_members_too(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        User::factory()->count(110)->create()->each(fn (User $invitee) => Approval::open(ApprovalType::Invite, $circle, $invitee, $owner));
+        $circle->members()->attach(User::factory()->count(219)->create(), ['role' => CircleRole::Member]);
+        $window = fn ($links): bool => collect($links)->slice(1, -1)->pluck('label')->all() === ['1', '2', '...', '5', '6', '7', '...', '10', '11'];
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'invites_page' => 6, 'members_page' => 6]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pending_invites.links', $window)
+            ->where('members.links', $window));
+    }
+
+    public function test_pages_the_invites_ten_at_a_time(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        User::factory()->count(11)->create()->each(fn (User $invitee) => Approval::open(ApprovalType::Invite, $circle, $invitee, $owner));
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'invites_page' => 2]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('pending_invites.current_page', 2)
+            ->where('pending_invites.total', 11)
+            ->has('pending_invites.data', 1)
+            ->where('pending_invites.prev_page_url', fn (string $url): bool => str_contains($url, 'invites_page=1')));
+    }
+
+    public function test_pages_the_members_twenty_at_a_time(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $circle->members()->attach(User::factory()->count(20)->create(), ['role' => CircleRole::Member]);
+
+        $response = $this->actingAs($owner)->get(route('circles.show', [$circle, 'members_page' => 2]));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('members.current_page', 2)
+            ->where('members.total', 21)
+            ->has('members.data', 1)
+            ->where('members.prev_page_url', fn (string $url): bool => str_contains($url, 'members_page=1')));
+    }
+
+    public function test_reloading_one_list_only_looks_that_list_up(): void
+    {
+        $circle = Circle::factory()->create();
+        $owner = $this->memberOf($circle, CircleRole::Owner);
+        $this->askToJoin($circle, 1);
+        Approval::open(ApprovalType::Invite, $circle, User::factory()->create(), $owner);
+        $queries = [];
+
+        $response = $this->actingAs($owner)->get(route('circles.show', $circle));
+
+        $response->assertInertia(function (AssertableInertia $page) use (&$queries): void {
+            DB::listen(function (QueryExecuted $query) use (&$queries): void {
+                $queries[] = $query;
+            });
+
+            $page->reloadOnly('pending_join_requests', fn (AssertableInertia $reload) => $reload->has('pending_join_requests.data', 1));
+        });
+        $this->assertEmpty(array_filter($queries, fn (QueryExecuted $query): bool => str_contains($query->sql, 'case circle_user.role')), 'the members were looked up');
+        $this->assertEmpty(array_filter($queries, fn (QueryExecuted $query): bool => in_array(ApprovalType::Invite->value, $query->bindings, true)), 'the invites were looked up');
     }
 
     public function test_an_unknown_circle_is_not_found(): void
@@ -924,6 +1030,14 @@ class CircleControllerTest extends TestCase
     private function totnes(): Place
     {
         return Place::fromGeoNames(self::TOTNES);
+    }
+
+    /**
+     * New users asking to join the circle.
+     */
+    private function askToJoin(Circle $circle, int $howMany): void
+    {
+        User::factory()->count($howMany)->create()->each(fn (User $asker) => Approval::open(ApprovalType::JoinRequest, $circle, $asker, $asker));
     }
 
     /**

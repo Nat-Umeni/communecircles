@@ -14,7 +14,6 @@ use Database\Factories\CircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -124,18 +123,21 @@ class Circle extends Model implements Approvable
     }
 
     /**
-     * Everyone in the circle with their membership: owners, then admins, then members, the longest in first within
-     * each.
+     * Everyone in the circle with their membership: owners, then admins, then members (CircleRole's order), the longest
+     * in first within each. A query, so it can be paged.
      *
-     * @return Collection<int, User>
+     * @return BelongsToMany<User, $this>
      */
-    public function membersByRole(): Collection
+    public function membersByRole(): BelongsToMany
     {
+        $roles = CircleRole::cases();
+
         return $this->members()
-            ->oldest('circle_user.created_at')
-            ->get()
-            ->sortBy(fn (User $member): int => array_search($member->pivot->role, CircleRole::cases(), true))
-            ->values();
+            ->orderByRaw(
+                'case circle_user.role '.implode(' ', array_fill(0, count($roles), 'when ? then ?')).' end',
+                array_merge(...array_map(fn (CircleRole $role, int $rank): array => [$role->value, $rank], $roles, array_keys($roles))),
+            )
+            ->oldest('circle_user.created_at');
     }
 
     /**
