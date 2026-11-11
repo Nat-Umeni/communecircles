@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
-import { ref, useId } from 'vue';
+import { useId } from 'vue';
 import { route } from 'ziggy-js';
+import { useFormDialog } from '@/composables/ui/useFormDialog';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
 import FormField from '@/components/ui/form/FormField.vue';
@@ -20,8 +21,7 @@ const props = withDefaults(
 );
 
 const approving = useForm({});
-const rejecting = useForm({ reason: '' });
-const asking = ref(false);
+const { open: asking, form: rejecting, send } = useFormDialog({ reason: '' });
 const reasonFormId = useId();
 
 function approve(): void {
@@ -29,13 +29,7 @@ function approve(): void {
 }
 
 function reject(): void {
-    rejecting.post(route('approvals.reject', props.approval), {
-        preserveScroll: true,
-        onSuccess: () => {
-            asking.value = false;
-            rejecting.reset();
-        },
-    });
+    send('post', route('approvals.reject', props.approval), { preserveScroll: true });
 }
 </script>
 

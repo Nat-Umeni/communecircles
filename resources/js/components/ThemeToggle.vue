@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Monitor, Moon, Sun } from '@lucide/vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
-import { useTheme } from '@/composables/useTheme';
+import { useTheme } from '@/composables/ui/useTheme';
 import type { Option } from '@/types';
 
 withDefaults(

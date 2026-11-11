@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
 import { useId } from 'vue';
 import { route } from 'ziggy-js';
+import { useFormDialog } from '@/composables/ui/useFormDialog';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
 import FormField from '@/components/ui/form/FormField.vue';
@@ -16,17 +16,11 @@ const props = defineProps<{
 const open = defineModel<boolean>('open', { required: true });
 
 // Field names match the validation in app/Http/Requests/Circle/StoreInviteRequest.php.
-const form = useForm({ email: '' });
+const { form, send } = useFormDialog({ email: '' }, open);
 const formId = useId();
 
 function submit(): void {
-    form.post(route('circles.invites.store', props.circle), {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset();
-            open.value = false;
-        },
-    });
+    send('post', route('circles.invites.store', props.circle), { preserveScroll: true });
 }
 </script>
 

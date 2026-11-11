@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import { route } from 'ziggy-js';
+import { useFormDialog } from '@/composables/ui/useFormDialog';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
 
@@ -13,16 +12,10 @@ const props = defineProps<{
     name: string;
 }>();
 
-const cancelling = useForm({});
-const confirming = ref(false);
+const { open: confirming, form: cancelling, send } = useFormDialog({});
 
 function cancel(): void {
-    cancelling.post(route('approvals.cancel', props.invite), {
-        preserveScroll: true,
-        onSuccess: () => {
-            confirming.value = false;
-        },
-    });
+    send('post', route('approvals.cancel', props.invite), { preserveScroll: true });
 }
 </script>
 

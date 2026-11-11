@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 async function freshUseTheme() {
     vi.resetModules();
 
-    return (await import('@/composables/useTheme')).useTheme;
+    return (await import('@/composables/ui/useTheme')).useTheme;
 }
 
 /** Stands in for the system's light/dark preference, and lets a test change it. */

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import { route } from 'ziggy-js';
+import { useFormDialog } from '@/composables/ui/useFormDialog';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
 import type { Circle } from '@/types';
@@ -10,11 +9,10 @@ const props = defineProps<{
     circle: Pick<Circle, 'public_id' | 'name'>;
 }>();
 
-const deleting = useForm({});
-const confirming = ref(false);
+const { open: confirming, form: deleting, send } = useFormDialog({});
 
 function destroy(): void {
-    deleting.delete(route('circles.destroy', props.circle.public_id));
+    send('delete', route('circles.destroy', props.circle.public_id));
 }
 </script>
 
