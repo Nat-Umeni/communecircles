@@ -26,6 +26,22 @@ describe('Card', () => {
         expect(wrapper.get('h3 a').attributes('href')).toBe('/circles.show/k3x9q2mzt8');
     });
 
+    it("puts the aside at the end of the title's row, with the description below", () => {
+        const wrapper = mount(Card, { props: { title: 'Members', description: 'Everyone in the circle.' }, slots: { aside: '<form role="search"></form>' } });
+        const row = wrapper.get('h3').element.parentElement!;
+
+        expect(wrapper.get('form[role="search"]').element.parentElement).toBe(row);
+        expect(row.classList).toContain('justify-between');
+        expect(row.nextElementSibling).toBe(wrapper.get('header p').element);
+    });
+
+    it('shows the header for just an aside', () => {
+        const wrapper = mount(Card, { slots: { aside: '<form role="search"></form>' } });
+
+        expect(wrapper.get('header').find('form[role="search"]').exists()).toBe(true);
+        expect(wrapper.find('h3').exists()).toBe(false);
+    });
+
     it('leaves out the header without a title or description', () => {
         const wrapper = mount(Card, { slots: { default: 'Just content' } });
 
@@ -37,6 +53,7 @@ describe('Card', () => {
         const wrapper = mount(Card, { props: { description: 'New posts from every circle will show up here.' } });
 
         expect(wrapper.find('h3').exists()).toBe(false);
+        expect(wrapper.get('header').element.children).toHaveLength(1);
         expect(wrapper.get('header p').text()).toBe('New posts from every circle will show up here.');
     });
 });

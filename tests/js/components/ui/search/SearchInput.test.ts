@@ -1,6 +1,6 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
-import SearchInput from '@/components/ui/form/SearchInput.vue';
+import SearchInput from '@/components/ui/search/SearchInput.vue';
 
 /**
  * A SearchInput bound with v-model, as a page uses it.

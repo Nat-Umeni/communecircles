@@ -7,6 +7,7 @@ import InviteDialog from '@/components/circles/InviteDialog.vue';
 import MembersTable from '@/components/circles/MembersTable.vue';
 import CountPill from '@/components/ui/CountPill.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
+import SearchBar from '@/components/ui/search/SearchBar.vue';
 import Show from '@/pages/circles/Show.vue';
 import type { Approval, Circle, CirclePermissions, Loaded, Paginated, Place, User } from '@/types';
 import { fakeRouter, links, paginated, signIn, visit } from '@tests/support';
@@ -53,6 +54,7 @@ interface ShowProps {
     invite: Loaded<Approval, 'requester'> | null;
     pending_invites: Paginated<Loaded<Approval, 'user'>> | null;
     members: Paginated<Loaded<User, 'membership'>> | null;
+    filters: { members_search: string };
 }
 
 /**
@@ -60,7 +62,7 @@ interface ShowProps {
  */
 function show(props: Partial<ShowProps> = {}, attachTo?: HTMLElement): VueWrapper {
     return mount(Show, {
-        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, ...props },
+        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, filters: { members_search: '' }, ...props },
         attachTo,
     });
 }
@@ -108,6 +110,35 @@ describe('circles/Show', () => {
 
         expect(card.getComponent(MembersTable).props('members')).toEqual(members.data);
         expect(card.getComponent(PaginatedList).props()).toEqual(expect.objectContaining({ paginator: members, label: 'Members', only: ['members'], size: 'card' }));
+    });
+
+    it("searches the members from the card's title row, bringing the search back into view for a new page", async () => {
+        signIn();
+        const members = paginated([{ ...grace, membership: { id: 7, role: { value: 'owner' as const, label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' as const } }]);
+        const wrapper = show({ members, filters: { members_search: 'gra' } });
+        const card = wrapper.get('[data-members]');
+
+        expect(card.get('header').getComponent(SearchBar).props()).toEqual({
+            param: 'members_search',
+            pageName: 'members_page',
+            search: 'gra',
+            only: ['members', 'filters'],
+            label: 'Search members',
+            placeholder: 'Search members by name',
+        });
+        // The search bar is a template ref, filled in once the page has rendered.
+        await wrapper.vm.$nextTick();
+        expect(card.getComponent(PaginatedList).props('anchor')).toBe(card.get('form[role="search"]').element);
+        expect(card.get('form[role="search"]').classes()).toContain('scroll-mt-24');
+    });
+
+    it('says so when no member matches the search', () => {
+        signIn();
+        const card = show({ members: paginated([]), filters: { members_search: 'zz' } }).get('[data-members]');
+
+        expect(card.text()).toContain('No members match “zz”');
+        expect(card.findComponent(MembersTable).exists()).toBe(false);
+        expect(card.find('form[role="search"]').exists()).toBe(true);
     });
 
     it('lets those who can delete the circle', () => {

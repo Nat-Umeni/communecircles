@@ -8,6 +8,8 @@ type SignedIn = Loaded<User, 'email' | 'email_verified' | 'role'>;
 
 interface TestPage {
     component: string;
+    /** The address the page is at, path and query, as Inertia has it. */
+    url: string;
     props: {
         auth: { user: SignedIn | null };
         locale: string;
@@ -29,6 +31,7 @@ export const locales = [
 function freshPage(): TestPage {
     return {
         component: 'circles/Index',
+        url: '/',
         props: {
             auth: { user: null },
             locale: 'en',

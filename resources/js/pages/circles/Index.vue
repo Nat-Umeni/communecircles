@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import { ref, useTemplateRef } from 'vue';
 import { route } from 'ziggy-js';
 import { useAuth } from '@/composables/auth/useAuth';
-import { useDebouncedFn } from '@/composables/useDebouncedFn';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CircleCard from '@/components/circles/CircleCard.vue';
 import HeroPanel from '@/components/HeroPanel.vue';
@@ -12,13 +11,13 @@ import Card from '@/components/ui/Card.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
-import SearchInput from '@/components/ui/form/SearchInput.vue';
+import SearchBar from '@/components/ui/search/SearchBar.vue';
 import type { Circle, Loaded, Option, Paginated } from '@/types';
 
 // From CircleController::index (also the home page until there's a dashboard), plus locale/locales shared by
 // HandleInertiaRequests.
 const props = defineProps<{
-    /** Popular: approved circles, most members first, searched by name. */
+    /** Popular: approved circles, most members first, searched by name or description. */
     circles: Paginated<Loaded<Circle, 'members_count'>>;
     filters: { search: string };
     /** Every circle the member is in, approved or not; null for guests. */
@@ -34,28 +33,12 @@ const lists: Option[] = [
     { value: 'popular', label: 'Popular' },
 ];
 
-// The selected list, search text and language are UI state, starting from the server's props. Members start on their
-// own circles unless they have none, or are searching or paging Popular (its links load this page afresh).
+// The selected list and language are UI state, starting from the server's props. Members start on their own circles
+// unless they have none, or are searching or paging Popular (its links load this page afresh).
 const list = ref(props.your_circles?.length && !props.filters.search && props.circles.current_page === 1 ? 'yours' : 'popular');
-/** How long typing has to stop before the search is sent. */
-const SEARCH_PAUSE_MS = 450;
-
-const search = ref(props.filters.search);
 // A new page of Popular brings the search bar back into view, rather than just the list's top.
-const searchBar = useTemplateRef<HTMLFormElement>('searchBar');
+const searchBar = useTemplateRef<InstanceType<typeof SearchBar>>('searchBar');
 const language = ref(props.locale);
-
-// Searching reloads only the circles and the search they're for, keeping the page where it is. Typing searches once it
-// stops for a moment; Enter and the ✕ search straight away, dropping one still waiting (and a newer search cancels one
-// still loading).
-function find(): void {
-    const text = search.value.trim();
-
-    findSoon.cancel();
-    router.get(route('circles.index'), text === '' ? {} : { search: text }, { only: ['circles', 'filters'], preserveState: true, preserveScroll: true });
-}
-
-const findSoon = useDebouncedFn(find, SEARCH_PAUSE_MS);
 </script>
 
 <template>
@@ -81,15 +64,21 @@ const findSoon = useDebouncedFn(find, SEARCH_PAUSE_MS);
             <Card v-if="!your_circles?.length" title="You're not in any circles yet" description="Find one under Popular, or start your own from the + menu." />
         </template>
         <template v-else>
-            <form ref="searchBar" role="search" class="scroll-mt-24" @submit.prevent="find">
-                <SearchInput v-model="search" name="search" aria-label="Search circles" placeholder="Search circles by name or description" @update:model-value="findSoon.call()" @clear="find" />
-            </form>
-            <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page" :anchor="searchBar">
+            <SearchBar
+                ref="searchBar"
+                param="search"
+                :search="filters.search"
+                :only="['circles', 'filters']"
+                label="Search circles"
+                placeholder="Search circles by name or description"
+                class="scroll-mt-24"
+            />
+            <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page" :anchor="searchBar?.$el ?? null">
                 <div class="flex flex-col gap-6">
                     <CircleCard v-for="circle in circles.data" :key="circle.public_id" :circle="circle" />
                 </div>
             </PaginatedList>
-            <Card v-else-if="filters.search" :title="`No circles match “${filters.search}”`" description="Try another name." />
+            <Card v-else-if="filters.search" :title="`No circles match “${filters.search}”`" description="Try other words." />
             <Card v-else title="No circles yet" description="Circles will show up here once they're started." />
         </template>
 

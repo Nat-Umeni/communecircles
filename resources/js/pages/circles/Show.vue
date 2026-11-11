@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Mail, Pencil } from '@lucide/vue';
-import { ref } from 'vue';
+import { ref, useTemplateRef } from 'vue';
 import { route } from 'ziggy-js';
 import { useAuth } from '@/composables/auth/useAuth';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -19,6 +19,7 @@ import CountPill from '@/components/ui/CountPill.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
+import SearchBar from '@/components/ui/search/SearchBar.vue';
 import type { Approval, Circle, CirclePermissions, Loaded, Paginated, User } from '@/types';
 import { fullName } from '@/utils/format';
 
@@ -38,6 +39,8 @@ const props = defineProps<{
     pending_invites: Paginated<Loaded<Approval, 'user'>> | null;
     /** Everyone in the circle, for its owners, admins and staff; null for everyone else, who get only the count. */
     members: Paginated<Loaded<User, 'membership'>> | null;
+    /** The search the members list is for ('' for everyone). */
+    filters: { members_search: string };
 }>();
 
 const { signedIn } = useAuth();
@@ -45,6 +48,9 @@ const joining = useForm({});
 
 // Whether the invite dialog is open; the header's Create menu opens it.
 const inviting = ref(false);
+
+// A new page of members brings their search back into view, rather than just the list's top.
+const membersSearch = useTemplateRef<InstanceType<typeof SearchBar>>('membersSearch');
 
 function askToJoin(): void {
     joining.post(route('circles.join-requests.store', props.circle.public_id), { preserveScroll: true });
@@ -140,9 +146,22 @@ function askToJoin(): void {
         </div>
 
         <Card v-if="members" title="Members" data-members>
-            <PaginatedList :paginator="members" label="Members" :only="['members']">
+            <template #aside>
+                <SearchBar
+                    ref="membersSearch"
+                    param="members_search"
+                    page-name="members_page"
+                    :search="filters.members_search"
+                    :only="['members', 'filters']"
+                    label="Search members"
+                    placeholder="Search members by name"
+                    class="w-full scroll-mt-24 sm:w-80"
+                />
+            </template>
+            <PaginatedList v-if="members.total" :paginator="members" label="Members" :only="['members']" :anchor="membersSearch?.$el ?? null">
                 <MembersTable :members="members.data" />
             </PaginatedList>
+            <p v-else class="text-muted-foreground">No members match “{{ filters.members_search }}”.</p>
         </Card>
 
         <!-- TODO: list the circle's channels once they exist. -->
