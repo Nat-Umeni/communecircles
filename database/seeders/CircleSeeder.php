@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalStatus;
 use App\Enums\Approval\ApprovalType;
@@ -28,7 +29,7 @@ class CircleSeeder extends Seeder
     public const int REJECTED = 5;
 
     /** The circle owner's circle, with lists long enough to page through. */
-    public const string BIG_CIRCLE = 'Totnes Seed Exchange';
+    public const string BIG_CIRCLE = 'Fernhill Eco Village';
 
     /** Everyone in the big circle, its owner, admin and member included. */
     public const int BIG_CIRCLE_MEMBERS = 45;
@@ -36,6 +37,51 @@ class CircleSeeder extends Seeder
     public const int BIG_CIRCLE_REQUESTS = 25;
 
     public const int BIG_CIRCLE_INVITES = 15;
+
+    /**
+     * Towns the communities live near, mostly in the US and the UK, as GeoNames has them (looked up once on 2026-11-11,
+     * so seeding never calls GeoNames): id, name, region, country code, country name, latitude, longitude.
+     */
+    private const array PLACES = [
+        [2635610, 'Totnes', 'England', 'GB', 'United Kingdom', 50.43107, -3.68430],
+        [2643251, 'Machynlleth', 'Wales', 'GB', 'United Kingdom', 52.58965, -3.85308],
+        [2636616, 'Stroud', 'England', 'GB', 'United Kingdom', 51.75000, -2.20000],
+        [2649192, 'Forres', 'Scotland', 'GB', 'United Kingdom', 57.60997, -3.62115],
+        [2647207, 'Hebden Bridge', 'England', 'GB', 'United Kingdom', 53.74093, -2.01337],
+        [2648559, 'Glastonbury', 'England', 'GB', 'United Kingdom', 51.14745, -2.72075],
+        [2649024, 'Frome', 'England', 'GB', 'United Kingdom', 51.22834, -2.32211],
+        [2644559, 'Lewes', 'England', 'GB', 'United Kingdom', 50.87398, 0.00880],
+        [2643425, 'Ludlow', 'England', 'GB', 'United Kingdom', 52.37431, -2.71311],
+        [2644981, 'Lampeter', 'Wales', 'GB', 'United Kingdom', 52.11285, -4.08039],
+        [2645826, 'Kendal', 'England', 'GB', 'United Kingdom', 54.32681, -2.74757],
+        [2640377, 'Penzance', 'England', 'GB', 'United Kingdom', 50.11861, -5.53715],
+        [2647267, 'Hay-on-wye', 'Wales', 'GB', 'United Kingdom', 52.07049, -3.12741],
+        [2635199, 'Ullapool', 'Scotland', 'GB', 'United Kingdom', 57.89872, -5.16039],
+        [5550409, 'Paonia', 'Colorado', 'US', 'United States', 38.86832, -107.59200],
+        [5418538, 'Crestone', 'Colorado', 'US', 'United States', 37.99639, -105.69973],
+        [5493811, 'Taos', 'New Mexico', 'US', 'United States', 36.40725, -105.57307],
+        [5284905, 'Bisbee', 'Arizona', 'US', 'United States', 31.44815, -109.92841],
+        [5558953, 'Arcata', 'California', 'US', 'United States', 40.86652, -124.08284],
+        [5376502, 'Nevada City', 'California', 'US', 'United States', 39.26173, -121.01779],
+        [5807239, 'Port Townsend', 'Washington', 'US', 'United States', 48.11742, -122.76071],
+        [5814307, 'Twisp', 'Washington', 'US', 'United States', 48.36348, -120.12230],
+        [5277276, 'Viroqua', 'Wisconsin', 'US', 'United States', 43.55692, -90.88874],
+        [4759446, 'Floyd', 'Virginia', 'US', 'United States', 36.91124, -80.32005],
+        [5234141, 'Brattleboro', 'Vermont', 'US', 'United States', 42.85092, -72.55787],
+        [4110119, 'Eureka Springs', 'Arkansas', 'US', 'United States', 36.40118, -93.73797],
+        [5543307, 'Moab', 'Utah', 'US', 'United States', 38.57332, -109.54984],
+        [5525775, 'Marfa', 'Texas', 'US', 'United States', 30.30973, -104.02134],
+        [2965413, 'Cloghjordan', 'Munster', 'IE', 'Ireland', 52.94028, -8.03556],
+        [6086871, 'Nelson', 'British Columbia', 'CA', 'Canada', 49.49985, -117.28553],
+    ];
+
+    /** Why staff turn a new circle down. */
+    private const array REJECTIONS = [
+        'There is already an off-grid community on that land. Could you join it instead?',
+        'Please say more about how the community will live: its power, water and food.',
+        'This looks like selling plots of land rather than a community.',
+        'The name needs to say where the land is.',
+    ];
 
     private User $staff;
 
@@ -59,16 +105,16 @@ class CircleSeeder extends Seeder
     }
 
     /**
-     * Approved circles of every size, so the most popular list has an order to it; every tenth says where it is.
+     * Approved circles of every size, so the most popular list has an order to it.
      *
      * @param  Collection<int, User>  $people
      * @return Collection<int, Circle>
      */
     private function approvedCircles(Collection $people): Collection
     {
-        return Collection::times(self::APPROVED, function (int $number) use ($people): Circle {
+        return Collection::times(self::APPROVED, function () use ($people): Circle {
             $owner = $people->random();
-            $circle = $this->start($owner, ApprovalStatus::Approved, location: $number % 10 === 0 ? Location::named(fake()->city(), 'GB') : null);
+            $circle = $this->start($owner, ApprovalStatus::Approved);
             $circle->members()->attach($people->reject(fn (User $person): bool => $person->is($owner))->random(fake()->numberBetween(0, 29)), ['role' => CircleRole::Member]);
 
             return $circle;
@@ -83,7 +129,7 @@ class CircleSeeder extends Seeder
     private function waitingAndRejectedCircles(Collection $people): void
     {
         $people->take(self::WAITING)->each(fn (User $person) => $this->start($person, ApprovalStatus::Pending));
-        $people->slice(self::WAITING, self::REJECTED)->each(fn (User $person) => $this->start($person, ApprovalStatus::Rejected, reason: fake()->sentence()));
+        $people->slice(self::WAITING, self::REJECTED)->each(fn (User $person) => $this->start($person, ApprovalStatus::Rejected, reason: fake()->randomElement(self::REJECTIONS)));
     }
 
     /**
@@ -94,7 +140,12 @@ class CircleSeeder extends Seeder
      */
     private function bigCircle(User $owner, User $admin, User $member, Collection $people): void
     {
-        $circle = $this->start($owner, ApprovalStatus::Approved, ['name' => self::BIG_CIRCLE], Location::named('Totnes', 'GB'));
+        $circle = $this->start(
+            $owner,
+            ApprovalStatus::Approved,
+            ['name' => self::BIG_CIRCLE, 'description' => 'An off-grid village of straw-bale homes at Fernhill, running on sun, wind and rainwater.'],
+            Location::at($this->totnes(), 'Fernhill'),
+        );
         $circle->members()->attach($admin, ['role' => CircleRole::Admin]);
         $circle->members()->attach($member, ['role' => CircleRole::Member]);
 
@@ -120,8 +171,19 @@ class CircleSeeder extends Seeder
      */
     private function circleOwnersOtherCircles(User $owner): void
     {
-        $this->start($owner, ApprovalStatus::Pending, ['name' => 'Dartington Tool Library']);
-        $this->start($owner, ApprovalStatus::Rejected, ['name' => 'Totnes Repair Café'], reason: 'There is already a repair café in Totnes. Could you join theirs?');
+        $this->start(
+            $owner,
+            ApprovalStatus::Pending,
+            ['name' => 'Hazelbrook Solar Co-op', 'description' => 'Neighbours at Hazelbrook sharing solar panels and batteries, off the grid for good.'],
+            Location::at($this->totnes(), 'Hazelbrook'),
+        );
+        $this->start(
+            $owner,
+            ApprovalStatus::Rejected,
+            ['name' => 'Hollyford Tiny House Village', 'description' => 'Tiny off-grid homes at Hollyford, with a shared bathhouse, kitchen and gardens.'],
+            Location::at($this->totnes(), 'Hollyford'),
+            'There is already a tiny house village near Totnes. Could you join theirs?',
+        );
     }
 
     /**
@@ -141,13 +203,14 @@ class CircleSeeder extends Seeder
 
     /**
      * A circle started by its owner, who is attached as such, and its new-circle approval decided by staff (or left
-     * waiting), with the time it was asked for spread over the last month.
+     * waiting), with the time it was asked for spread over the last month. Without a location, it's somewhere near one
+     * of the towns (CircleFactory::somewhereNear()), mostly with coordinates for the explore map.
      *
      * @param  array<string, mixed>  $attributes
      */
     private function start(User $owner, ApprovalStatus $outcome, array $attributes = [], ?Location $location = null, ?string $reason = null): Circle
     {
-        $factory = $location === null ? Circle::factory() : Circle::factory()->at($location);
+        $factory = $location === null ? Circle::factory()->somewhereNear($this->places()) : Circle::factory()->at($location);
         // Made, then saved: creating it through the factory would also make an approval and a person of its own.
         $circle = $factory->make($attributes);
         $circle->save();
@@ -174,6 +237,35 @@ class CircleSeeder extends Seeder
         $askedAt = now()->subMinutes(fake()->numberBetween(10, 60 * 24 * 30));
 
         $approval->forceFill(['created_at' => $askedAt, 'updated_at' => $askedAt])->saveQuietly();
+    }
+
+    /**
+     * The towns the communities live near.
+     *
+     * @return non-empty-list<Place>
+     */
+    private function places(): array
+    {
+        return array_map(
+            fn (array $place): Place => new Place(
+                geonamesId: $place[0],
+                name: $place[1],
+                region: $place[2],
+                countryCode: $place[3],
+                countryName: $place[4],
+                latitude: $place[5],
+                longitude: $place[6],
+            ),
+            self::PLACES,
+        );
+    }
+
+    /**
+     * Totnes, which the circle owner's own circles are near.
+     */
+    private function totnes(): Place
+    {
+        return $this->places()[0];
     }
 
     private function account(string $email): User

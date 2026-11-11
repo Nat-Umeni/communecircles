@@ -27,6 +27,7 @@ class CircleSeederTest extends TestCase
 
         $this->assertCirclesInEveryState();
         $this->assertEachCircleStartedByItsOwner();
+        $this->assertMostCirclesAreOnTheMap();
         $this->assertTheBigCircle();
         $this->assertTheCircleOwnersOtherCircles();
         $this->assertTheCircleMembersRequestAndInvites();
@@ -50,6 +51,18 @@ class CircleSeederTest extends TestCase
         }
 
         $this->assertGreaterThan(1, Circle::query()->whereNotNull('location_name')->count(), 'the big circle and some others say where they are');
+    }
+
+    private function assertMostCirclesAreOnTheMap(): void
+    {
+        $this->assertGreaterThan(
+            Circle::query()->count() / 2,
+            Circle::query()->whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            'most circles are near a GeoNames town, with coordinates for the explore map',
+        );
+        $this->assertGreaterThan(1, Circle::query()->distinct()->count('country_code'), 'the circles are in more than one country');
+        $big = Circle::query()->where('name', CircleSeeder::BIG_CIRCLE)->sole();
+        $this->assertSame(['Fernhill', 'Totnes'], [$big->location_name, $big->place_name], 'the big circle is on its land near Totnes');
     }
 
     private function assertTheBigCircle(): void
