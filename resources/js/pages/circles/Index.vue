@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { route } from 'ziggy-js';
 import { useAuth } from '@/composables/auth/useAuth';
+import { useDebouncedFn } from '@/composables/useDebouncedFn';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CircleCard from '@/components/circles/CircleCard.vue';
 import HeroPanel from '@/components/HeroPanel.vue';
@@ -11,7 +12,7 @@ import Card from '@/components/ui/Card.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
-import Input from '@/components/ui/form/Input.vue';
+import SearchInput from '@/components/ui/form/SearchInput.vue';
 import type { Circle, Loaded, Option, Paginated } from '@/types';
 
 // From CircleController::index (also the home page until there's a dashboard), plus locale/locales shared by
@@ -36,14 +37,23 @@ const lists: Option[] = [
 // The selected list, search text and language are UI state, starting from the server's props. Members start on their
 // own circles unless they have none, or are searching or paging Popular (its links load this page afresh).
 const list = ref(props.your_circles?.length && !props.filters.search && props.circles.current_page === 1 ? 'yours' : 'popular');
+/** How long typing has to stop before the search is sent. */
+const SEARCH_PAUSE_MS = 300;
+
 const search = ref(props.filters.search);
 const language = ref(props.locale);
 
+// Searching reloads only the circles and the search they're for, keeping the page where it is. Typing searches once it
+// stops for a moment; Enter and the ✕ search straight away, dropping one still waiting (and a newer search cancels one
+// still loading).
 function find(): void {
     const text = search.value.trim();
 
-    router.get(route('circles.index'), text === '' ? {} : { search: text }, { preserveState: true, preserveScroll: true });
+    findSoon.cancel();
+    router.get(route('circles.index'), text === '' ? {} : { search: text }, { only: ['circles', 'filters'], preserveState: true, preserveScroll: true });
 }
+
+const findSoon = useDebouncedFn(find, SEARCH_PAUSE_MS);
 </script>
 
 <template>
@@ -69,9 +79,8 @@ function find(): void {
             <Card v-if="!your_circles?.length" title="You're not in any circles yet" description="Find one under Popular, or start your own from the + menu." />
         </template>
         <template v-else>
-            <form role="search" class="flex gap-2" @submit.prevent="find">
-                <Input v-model="search" type="search" name="search" aria-label="Search circles" placeholder="Search circles by name" />
-                <Button type="submit" variant="surface" size="lg" class="shrink-0">Search</Button>
+            <form role="search" @submit.prevent="find">
+                <SearchInput v-model="search" name="search" aria-label="Search circles" placeholder="Search circles by name" @update:model-value="findSoon.call()" @clear="find" />
             </form>
             <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page">
                 <div class="flex flex-col gap-6">
