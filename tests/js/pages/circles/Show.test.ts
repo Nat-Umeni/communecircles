@@ -6,9 +6,10 @@ import DeleteCircle from '@/components/circles/DeleteCircle.vue';
 import InviteDialog from '@/components/circles/InviteDialog.vue';
 import MembersTable from '@/components/circles/MembersTable.vue';
 import CountPill from '@/components/ui/CountPill.vue';
+import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import Show from '@/pages/circles/Show.vue';
-import type { Approval, Circle, CirclePermissions, Loaded, Place, User } from '@/types';
-import { fakeRouter, links, signIn, visit } from '@tests/support';
+import type { Approval, Circle, CirclePermissions, Loaded, Paginated, Place, User } from '@/types';
+import { fakeRouter, links, paginated, signIn, visit } from '@tests/support';
 
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
 
@@ -48,10 +49,10 @@ interface ShowProps {
     can: CirclePermissions;
     approval: Approval | null;
     join_request: Approval | null;
-    pending_join_requests: Loaded<Approval, 'user'>[] | null;
+    pending_join_requests: Paginated<Loaded<Approval, 'user'>> | null;
     invite: Loaded<Approval, 'requester'> | null;
-    pending_invites: Loaded<Approval, 'user'>[] | null;
-    members: Loaded<User, 'membership'>[] | null;
+    pending_invites: Paginated<Loaded<Approval, 'user'>> | null;
+    members: Paginated<Loaded<User, 'membership'>> | null;
 }
 
 /**
@@ -102,9 +103,11 @@ describe('circles/Show', () => {
 
     it('shows everyone in the circle to those who can see its members', () => {
         signIn();
-        const members: Loaded<User, 'membership'>[] = [{ ...grace, membership: { id: 7, role: { value: 'owner', label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' } }];
+        const members = paginated([{ ...grace, membership: { id: 7, role: { value: 'owner' as const, label: 'Owner' }, joined_at: '2026-11-01T09:00:00+00:00' as const } }]);
+        const card = show({ members }).get('[data-members]');
 
-        expect(show({ members }).get('[data-members]').getComponent(MembersTable).props('members')).toEqual(members);
+        expect(card.getComponent(MembersTable).props('members')).toEqual(members.data);
+        expect(card.getComponent(PaginatedList).props()).toEqual(expect.objectContaining({ paginator: members, label: 'Members', only: ['members'], size: 'card' }));
     });
 
     it('lets those who can delete the circle', () => {
@@ -201,19 +204,22 @@ describe('circles/Show', () => {
     it("lists the requests to join for the circle's owners and admins to decide", () => {
         signIn();
         const wrapper = show({
-            pending_join_requests: [{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' }, can: { decide: true, cancel: false } }), user: grace }],
+            pending_join_requests: paginated([{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' }, can: { decide: true, cancel: false } }), user: grace }]),
         });
         const request = wrapper.get('[data-join-requests] li');
 
         expect(request.text()).toContain('Grace Hopper');
         expect(request.get('time').attributes('datetime')).toBe('2026-11-08T09:00:00+00:00');
         expect(decisions(wrapper)).toEqual([{ approval: 3, subject: "Grace Hopper's request", approveLabel: 'Accept', rejectLabel: 'Decline' }]);
-        expect(show({ pending_join_requests: [] }).get('[data-join-requests]').text()).toContain('No one is waiting to join.');
+        expect(wrapper.get('[data-join-requests]').getComponent(PaginatedList).props()).toEqual(
+            expect.objectContaining({ label: 'Requests to join', only: ['pending_join_requests'], size: 'card' }),
+        );
+        expect(show({ pending_join_requests: paginated([]) }).get('[data-join-requests]').text()).toContain('No one is waiting to join.');
     });
 
     it("lets the circle's owners and admins invite someone from the header's Create menu", async () => {
         signIn();
-        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: [] }, document.body);
+        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: paginated([]) }, document.body);
         const dialog = () => wrapper.getComponent(InviteDialog);
 
         expect(dialog().props()).toEqual({ circle: 'abc123', open: false });
@@ -228,7 +234,7 @@ describe('circles/Show', () => {
 
     it('opens the invite dialog again from the menu after it closed itself', async () => {
         signIn();
-        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: [] }, document.body);
+        const wrapper = show({ can: { ...nothing, invite: true }, pending_invites: paginated([]) }, document.body);
         const dialog = () => wrapper.getComponent(InviteDialog);
 
         await createMenu(wrapper);
@@ -248,9 +254,9 @@ describe('circles/Show', () => {
     it("lists the invites waiting for an answer, for the circle's owners and admins to cancel", () => {
         signIn();
         const wrapper = show({
-            pending_invites: [
+            pending_invites: paginated([
                 { ...approval({ id: 4, type: { value: 'invite', label: 'Invite' }, requested_at: '2026-11-07T09:00:00+00:00', can: { decide: false, cancel: true } }), user: alan },
-            ],
+            ]),
         });
         const invited = wrapper.get('[data-invites] li');
 
@@ -258,14 +264,15 @@ describe('circles/Show', () => {
         expect(invited.text()).toContain('Alan Turing');
         expect(invited.get('time').attributes('datetime')).toBe('2026-11-07T09:00:00+00:00');
         expect(invited.getComponent(CancelInvite).props()).toEqual({ invite: 4, name: 'Alan Turing' });
-        expect(show({ pending_invites: [] }).get('[data-invites]').text()).toContain('No invites are waiting for an answer.');
+        expect(wrapper.get('[data-invites]').getComponent(PaginatedList).props()).toEqual(expect.objectContaining({ label: 'Invites', only: ['pending_invites'], size: 'card' }));
+        expect(show({ pending_invites: paginated([]) }).get('[data-invites]').text()).toContain('No invites are waiting for an answer.');
     });
 
     it('shows staff the requests and invites waiting, without letting them decide or cancel', () => {
         signIn();
         const wrapper = show({
-            pending_join_requests: [{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' } }), user: grace }],
-            pending_invites: [{ ...approval({ id: 4, type: { value: 'invite', label: 'Invite' } }), user: alan }],
+            pending_join_requests: paginated([{ ...approval({ id: 3, type: { value: 'join_request', label: 'Request to join' } }), user: grace }]),
+            pending_invites: paginated([{ ...approval({ id: 4, type: { value: 'invite', label: 'Invite' } }), user: alan }]),
         });
 
         expect(wrapper.get('[data-join-requests] li').text()).toContain('Grace Hopper');
@@ -307,7 +314,7 @@ describe('circles/Show', () => {
 
     it("doesn't offer to invite people until the circle can take them", async () => {
         signIn();
-        const wrapper = show({ approval: waiting, pending_invites: [] }, document.body);
+        const wrapper = show({ approval: waiting, pending_invites: paginated([]) }, document.body);
 
         expect(wrapper.find('[data-invites]').exists()).toBe(true);
         expect(wrapper.findComponent(InviteDialog).exists()).toBe(false);

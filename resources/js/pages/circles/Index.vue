@@ -8,7 +8,7 @@ import CircleCard from '@/components/circles/CircleCard.vue';
 import HeroPanel from '@/components/HeroPanel.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
-import Pagination from '@/components/ui/Pagination.vue';
+import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import TextLink from '@/components/ui/TextLink.vue';
 import Input from '@/components/ui/form/Input.vue';
@@ -73,10 +73,13 @@ function find(): void {
                 <Input v-model="search" type="search" name="search" aria-label="Search circles" placeholder="Search circles by name" />
                 <Button type="submit" variant="surface" size="lg" class="shrink-0">Search</Button>
             </form>
-            <CircleCard v-for="circle in circles.data" :key="circle.public_id" :circle="circle" />
-            <Card v-if="circles.data.length === 0 && filters.search" :title="`No circles match “${filters.search}”`" description="Try another name." />
-            <Card v-else-if="circles.data.length === 0" title="No circles yet" description="Circles will show up here once they're started." />
-            <Pagination :paginator="circles" />
+            <PaginatedList v-if="circles.data.length" :paginator="circles" label="Popular circles" :only="['circles']" size="page">
+                <div class="flex flex-col gap-6">
+                    <CircleCard v-for="circle in circles.data" :key="circle.public_id" :circle="circle" />
+                </div>
+            </PaginatedList>
+            <Card v-else-if="filters.search" :title="`No circles match “${filters.search}”`" description="Try another name." />
+            <Card v-else title="No circles yet" description="Circles will show up here once they're started." />
         </template>
 
         <footer class="flex flex-col items-center gap-4 py-6">

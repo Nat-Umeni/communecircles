@@ -11,7 +11,7 @@ import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import Dialog from '@/components/ui/Dialog.vue';
 import NavItem from '@/components/ui/NavItem.vue';
-import Pagination from '@/components/ui/Pagination.vue';
+import Pagination from '@/components/ui/pagination/Pagination.vue';
 import SegmentedControl from '@/components/ui/SegmentedControl.vue';
 import Tag from '@/components/ui/Tag.vue';
 import TextLink from '@/components/ui/TextLink.vue';
@@ -24,7 +24,7 @@ import Select from '@/components/ui/form/Select.vue';
 import Textarea from '@/components/ui/form/Textarea.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
-import type { Timestamp } from '@/types';
+import type { Paginated, Timestamp } from '@/types';
 
 interface PaletteColour {
     name: string;
@@ -74,7 +74,28 @@ const countries = [
 ];
 
 // A middle page, so both directions show.
-const examplePages = { data: [], current_page: 2, last_page: 3, total: 60, prev_page_url: '#', next_page_url: '#' };
+// A made-up page 2 of 3, shaped as Laravel's paginator sends one.
+const examplePages: Paginated<never> = {
+    data: [],
+    current_page: 2,
+    first_page_url: '#',
+    from: 25,
+    last_page: 3,
+    last_page_url: '#',
+    links: [
+        { url: '#', label: 'Previous', page: 1, active: false },
+        { url: '#', label: '1', page: 1, active: false },
+        { url: '#', label: '2', page: 2, active: true },
+        { url: '#', label: '3', page: 3, active: false },
+        { url: '#', label: 'Next', page: 3, active: false },
+    ],
+    next_page_url: '#',
+    path: '#',
+    per_page: 24,
+    prev_page_url: '#',
+    to: 48,
+    total: 60,
+};
 
 // toISOString() always gives YYYY-MM-DDTHH:mm:ss.sssZ, an ISO 8601 Timestamp.
 const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() as Timestamp;

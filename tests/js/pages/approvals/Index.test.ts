@@ -1,11 +1,12 @@
 import { mount, type VueWrapper } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
+import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import Index from '@/pages/approvals/Index.vue';
 import type { Approval, Loaded, Paginated } from '@/types';
 
 type Queued = Loaded<Approval, 'subject' | 'requester'>;
-import { signIn } from '@tests/support';
+import { paginated, signIn } from '@tests/support';
 
 const exchange: Queued = {
     id: 5,
@@ -22,7 +23,7 @@ function queue(data: Queued[], pages: Partial<Paginated<Queued>> = {}): VueWrapp
     signIn({ role: { value: 'admin', label: 'Admin', internal: true } });
 
     return mount(Index, {
-        props: { approvals: { data, current_page: 1, last_page: 1, total: data.length, prev_page_url: null, next_page_url: null, ...pages } },
+        props: { approvals: paginated(data, pages) },
     });
 }
 
@@ -53,9 +54,12 @@ describe('approvals/Index', () => {
         expect(queue([]).get('main').text()).not.toMatch(/circle/i);
     });
 
-    it('pages through the queue', () => {
-        const wrapper = queue([exchange], { last_page: 2, total: 30, next_page_url: '/approvals?page=2' });
+    it('pages through the queue in a list of its own, reloading only the queue', () => {
+        const wrapper = queue([exchange], { last_page: 2, total: 30, path: '/approvals' });
+        const list = wrapper.getComponent(PaginatedList);
 
-        expect(wrapper.get('nav[aria-label="Pages"]').find('a').attributes('href')).toBe('/approvals?page=2');
+        expect(list.props()).toEqual(expect.objectContaining({ label: 'Approvals', only: ['approvals'], size: 'page' }));
+        expect(list.get('[role="region"]').find('[data-approval]').exists()).toBe(true);
+        expect(wrapper.get('nav[aria-label="Approvals pages"]').find('a[href="/approvals?page=2"]').exists()).toBe(true);
     });
 });

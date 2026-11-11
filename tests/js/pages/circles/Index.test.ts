@@ -1,16 +1,15 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+import CircleCard from '@/components/circles/CircleCard.vue';
+import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import Index from '@/pages/circles/Index.vue';
 import type { Circle, Loaded, Paginated } from '@/types';
 
 type Listed = Loaded<Circle, 'members_count'>;
-import { fakeRouter, groupButtons, links, locales, signIn } from '@tests/support';
+import { fakeRouter, groupButtons, links, locales, paginated, signIn } from '@tests/support';
 
-function circlesPage(data: Listed[]): Paginated<Listed> {
-    return { data, current_page: 1, last_page: 1, total: data.length, prev_page_url: null, next_page_url: null };
-}
 
-const circles = circlesPage([
+const circles = paginated([
     { public_id: 'aaaaaaaaaa', name: 'Allotment', description: 'Grow food together.', members_count: 4, location: null },
     { public_id: 'bbbbbbbbbb', name: 'Exchange', description: 'Share skills and lend tools.', members_count: 1, location: null },
 ]);
@@ -50,7 +49,7 @@ describe('circles/Index', () => {
     });
 
     it('says so when there are no circles yet', () => {
-        const wrapper = index({ circles: circlesPage([]) });
+        const wrapper = index({ circles: paginated([]) });
 
         expect(wrapper.text()).toContain('No circles yet');
         expect(wrapper.find('main h3 a').exists()).toBe(false);
@@ -101,16 +100,20 @@ describe('circles/Index', () => {
     });
 
     it('says so when no circle matches the search', () => {
-        const wrapper = index({ circles: circlesPage([]), filters: { search: 'zz' } });
+        const wrapper = index({ circles: paginated([]), filters: { search: 'zz' } });
 
         expect(wrapper.text()).toContain('No circles match “zz”');
         expect(wrapper.text()).not.toContain('No circles yet');
     });
 
-    it('pages through the popular circles', () => {
-        const wrapper = index({ circles: { ...circles, last_page: 2, total: 30, next_page_url: '/circles?page=2' } });
+    it('pages through the popular circles in a list of their own, reloading only the circles', () => {
+        const page = paginated(circles.data, { last_page: 2, total: 30, path: '/circles' });
+        const wrapper = index({ circles: page });
+        const list = wrapper.getComponent(PaginatedList);
 
-        expect(wrapper.get('nav[aria-label="Pages"]').find('a').attributes('href')).toBe('/circles?page=2');
+        expect(list.props()).toEqual(expect.objectContaining({ paginator: page, label: 'Popular circles', only: ['circles'], size: 'page' }));
+        expect(list.get('[role="region"]').findAllComponents(CircleCard)).toHaveLength(2);
+        expect(wrapper.get('nav[aria-label="Popular circles pages"]').find('a[href="/circles?page=2"]').exists()).toBe(true);
     });
 
     it("doesn't show guests the tabs, since they have no circles of their own", () => {
