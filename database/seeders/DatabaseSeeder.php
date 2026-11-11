@@ -2,25 +2,19 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+/**
+ * Everything for a dev database (php artisan migrate:fresh --seed): the accounts to sign in as, then circles in every
+ * state. Model events stay on, so the audit log records the seeded circles and memberships like real ones.
+ */
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'email' => 'test@example.com',
+        $this->call([
+            UserSeeder::class,
+            CircleSeeder::class,
         ]);
     }
 }
