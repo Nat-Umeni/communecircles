@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { route } from 'ziggy-js';
+import { useAuth } from '@/composables/auth/useAuth';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CircleCard from '@/components/circles/CircleCard.vue';
 import HeroPanel from '@/components/HeroPanel.vue';
@@ -24,6 +25,8 @@ const props = defineProps<{
     locale: string;
     locales: Option[];
 }>();
+
+const { signedIn } = useAuth();
 
 const lists: Option[] = [
     { value: 'yours', label: 'Your circles' },
@@ -52,7 +55,7 @@ function find(): void {
             description="Join a Circle, ask the people already farming, building and living in community, and share what you learn."
         >
             <!-- TODO: link to the explore page once it's done. -->
-            <Button v-if="$page.props.auth.user" variant="accent" size="lg">Explore Circles</Button>
+            <Button v-if="signedIn" variant="accent" size="lg">Explore Circles</Button>
             <template v-else>
                 <Button variant="surface" size="lg" :href="route('login')">Log in</Button>
                 <Button variant="accent" size="lg" :href="route('auth.register.create')">Join the Circle</Button>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ShieldCheck } from '@lucide/vue';
 import { onMounted, onUnmounted, ref } from 'vue';
+import { useAuth } from '@/composables/auth/useAuth';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import SidebarAccount from '@/components/account/SidebarAccount.vue';
 import NavItem from '@/components/ui/NavItem.vue';
@@ -9,6 +10,7 @@ import Input from '@/components/ui/form/Input.vue';
 // Whether the drawer is open on small screens. From lg up the sidebar is always shown.
 const open = defineModel<boolean>('open', { required: true });
 const search = ref('');
+const { staff } = useAuth();
 
 function closeOnEscape(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
@@ -50,7 +52,7 @@ onUnmounted(() => window.removeEventListener('keydown', closeOnEscape));
             </nav>
 
             <!-- NOTE: only hides the links; the pages themselves check the role (ApprovalPolicy). -->
-            <nav v-if="$page.props.auth.user?.role.internal" aria-label="Staff" class="flex flex-col gap-1 border-t border-border pt-4">
+            <nav v-if="staff" aria-label="Staff" class="flex flex-col gap-1 border-t border-border pt-4">
                 <p class="px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase" aria-hidden="true">Staff</p>
                 <NavItem :href="route('approvals.index')" :icon="ShieldCheck" :active="$page.component === 'approvals/Index'">Approvals</NavItem>
             </nav>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { useTooManyAttempts } from '@/composables/useTooManyAttempts';
+import { useTooManyAttempts } from '@/composables/auth/useTooManyAttempts';
 
 const response = (status: number, headers: Record<string, string> = {}) => ({ status, headers, data: '' });
 

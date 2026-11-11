@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { Mail, Pencil } from '@lucide/vue';
 import { ref } from 'vue';
 import { route } from 'ziggy-js';
+import { useAuth } from '@/composables/auth/useAuth';
 import AppLayout from '@/layouts/AppLayout.vue';
 import HeaderAction from '@/components/HeaderAction.vue';
 import ApprovalActions from '@/components/approvals/ApprovalActions.vue';
@@ -38,6 +39,7 @@ const props = defineProps<{
     members: Loaded<User, 'membership'>[] | null;
 }>();
 
+const { signedIn } = useAuth();
 const joining = useForm({});
 
 // Whether the invite dialog is open; the header's Create menu opens it.
@@ -97,7 +99,7 @@ function askToJoin(): void {
 
             <div class="flex flex-wrap items-center gap-3 empty:hidden">
                 <Button v-if="can.request_to_join" :disabled="joining.processing" @click="askToJoin">Ask to join</Button>
-                <Button v-else-if="!$page.props.auth.user" :href="route('login')">Log in to ask to join</Button>
+                <Button v-else-if="!signedIn" :href="route('login')">Log in to ask to join</Button>
                 <DeleteCircle v-if="can.delete" :circle="circle" />
             </div>
         </Card>

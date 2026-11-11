@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
-import { useTooManyAttempts } from '@/composables/useTooManyAttempts';
+import { useTooManyAttempts } from '@/composables/auth/useTooManyAttempts';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import Button from '@/components/ui/Button.vue';
 import TextLink from '@/components/ui/TextLink.vue';

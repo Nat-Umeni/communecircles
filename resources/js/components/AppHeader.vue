@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CirclePlus, Menu, Plus, X } from '@lucide/vue';
+import { useAuth } from '@/composables/auth/useAuth';
 import AppLogo from '@/components/AppLogo.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
@@ -7,6 +8,8 @@ import MenuItem from '@/components/ui/menu/MenuItem.vue';
 
 // Whether the sidebar drawer is open on small screens (shared with AppSidebar through AppLayout).
 const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
+
+const { signedIn } = useAuth();
 </script>
 
 <template>
@@ -29,7 +32,7 @@ const sidebarOpen = defineModel<boolean>('sidebarOpen', { required: true });
             <slot name="actions" />
 
             <!-- Only members can create things. -->
-            <DropdownMenu v-if="$page.props.auth.user" label="Create" tone="brand">
+            <DropdownMenu v-if="signedIn" label="Create" tone="brand">
                 <template #trigger>
                     <Plus class="size-5" aria-hidden="true" />
                 </template>

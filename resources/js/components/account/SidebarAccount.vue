@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
 import { LogOut, Settings, UserRound } from '@lucide/vue';
-import { computed } from 'vue';
+import { useAuth } from '@/composables/auth/useAuth';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import DropdownMenu from '@/components/ui/menu/DropdownMenu.vue';
@@ -9,10 +8,7 @@ import MenuItem from '@/components/ui/menu/MenuItem.vue';
 import type { Role } from '@/types';
 import { fullName } from '@/utils/format';
 
-const page = usePage();
-
-// Shared with every page by app/Http/Middleware/HandleInertiaRequests.php; null for guests.
-const user = computed(() => page.props.auth.user);
+const { user } = useAuth();
 
 // Staff get a badge (with the label from PHP) under their email; ordinary members don't.
 const badgeVariants: Partial<Record<Role, 'accent' | 'primary'>> = {
