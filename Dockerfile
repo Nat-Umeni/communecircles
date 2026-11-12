@@ -30,6 +30,13 @@ RUN pecl install xdebug \
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Node and npm, so npm runs here too (the node service runs Vite on this same image). Only node and npm's folder are
+# copied: the whole of /usr/local/bin would overwrite PHP's own. The slim image is Debian, like this one.
+COPY --from=node:26-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:26-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
 # Run as a user whose uid/gid match the host user, so files created inside the
 # container (artisan make:, logs, caches) stay owned by, and editable for, the host.
 ARG UID=1000

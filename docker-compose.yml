@@ -39,15 +39,17 @@ services:
       - app
     restart: unless-stopped
 
+  # Runs the Vite dev server.
+  # NOTE: built from the app's image, so node_modules are installed for the same system (glibc) whichever container
+  # runs npm; an Alpine image here would need different native binaries (rollup, esbuild, Tailwind) in the same
+  # shared folder. The image's entrypoint always starts PHP-FPM, so this overrides it.
   node:
-    image: node:26-alpine
-    user: node
-    working_dir: /var/www
+    build: .
+    entrypoint: ["sh", "-c", "npm install && exec npx vite"]
     volumes:
       - ./:/var/www
     ports:
       - "5173:5173"
-    command: sh -c "npm install && exec npx vite"
     restart: unless-stopped
 
   mysql:
