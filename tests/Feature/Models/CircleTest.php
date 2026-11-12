@@ -11,6 +11,7 @@ use App\Enums\User\Role;
 use App\Models\Approval;
 use App\Models\Circle;
 use App\Models\User;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Activitylog\Enums\ActivityEvent;
@@ -29,12 +30,12 @@ class CircleTest extends TestCase
         $this->assertSame('Share skills and lend tools.', $circle->description);
     }
 
-    public function test_ignores_attributes_that_are_not_mass_assignable(): void
+    public function test_refuses_attributes_that_are_not_mass_assignable(): void
     {
-        $circle = new Circle(['name' => 'Exchange', 'public_id' => 'chosenbyme']);
+        $this->expectException(MassAssignmentException::class);
+        $this->expectExceptionMessage('[public_id]');
 
-        $this->assertSame('Exchange', $circle->name);
-        $this->assertNull($circle->public_id);
+        new Circle(['name' => 'Exchange', 'public_id' => 'chosenbyme']);
     }
 
     public function test_members_are_everyone_in_the_circle_with_their_role(): void
@@ -378,13 +379,10 @@ class CircleTest extends TestCase
 
     public function test_does_not_let_the_location_be_mass_assigned(): void
     {
-        $circle = new Circle(['name' => 'Exchange', 'location_name' => 'Fernhill Farm', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'place_latitude' => 50.43107, 'latitude' => 50.4319]);
+        $this->expectException(MassAssignmentException::class);
+        $this->expectExceptionMessage('[location_name, geonames_id, place_name, place_latitude, latitude]');
 
-        $this->assertNull($circle->location_name);
-        $this->assertNull($circle->geonames_id);
-        $this->assertNull($circle->place_name);
-        $this->assertNull($circle->place_latitude);
-        $this->assertNull($circle->latitude);
+        new Circle(['name' => 'Exchange', 'location_name' => 'Fernhill Farm', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'place_latitude' => 50.43107, 'latitude' => 50.4319]);
     }
 
     private function totnes(): Place

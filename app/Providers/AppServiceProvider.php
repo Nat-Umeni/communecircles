@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\RateLimiter;
@@ -39,5 +40,10 @@ class AppServiceProvider extends ServiceProvider
         // 5 attempts a minute for each auth form ("throttle:auth"), counted per route and IP address
         // so that, say, failed logins don't use up the limit for registering.
         RateLimiter::for('auth', fn (Request $request): Limit => Limit::perMinute(5)->by($request->route()?->getName().'|'.$request->ip()));
+
+        // Outside production, models throw on lazy loading (an N+1), on filling an attribute that isn't fillable, and on
+        // reading one that wasn't selected, so those slips show up in development and tests. In production they're let
+        // through rather than becoming an error page.
+        Model::shouldBeStrict(! app()->isProduction());
     }
 }

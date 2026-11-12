@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Providers;
 
+use App\Providers\AppServiceProvider;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -15,6 +17,29 @@ class AppServiceProviderTest extends TestCase
         $response = JsonResource::make(['name' => 'Seed Exchange'])->toResponse(request());
 
         $this->assertSame(['name' => 'Seed Exchange'], $response->getData(true));
+    }
+
+    public function test_models_are_strict_outside_production(): void
+    {
+        $this->assertTrue(Model::preventsLazyLoading(), 'lazy loading (an N+1) throws');
+        $this->assertTrue(Model::preventsSilentlyDiscardingAttributes(), 'filling an attribute that is not fillable throws');
+        $this->assertTrue(Model::preventsAccessingMissingAttributes(), 'reading an attribute that was not selected throws');
+    }
+
+    public function test_models_forgive_in_production_so_a_slip_there_is_not_an_error_page(): void
+    {
+        $this->app['env'] = 'production';
+
+        try {
+            (new AppServiceProvider($this->app))->boot();
+
+            $this->assertFalse(Model::preventsLazyLoading());
+            $this->assertFalse(Model::preventsSilentlyDiscardingAttributes());
+            $this->assertFalse(Model::preventsAccessingMissingAttributes());
+        } finally {
+            // NOTE: these switches are static, so the next test in this process would otherwise run lenient.
+            Model::shouldBeStrict();
+        }
     }
 
     public function test_default_password_rules_accept_a_strong_password(): void

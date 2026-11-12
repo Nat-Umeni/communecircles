@@ -18,7 +18,9 @@ trait HasApprovals
      */
     public function approvals(): MorphMany
     {
-        return $this->morphMany(Approval::class, 'approvable');
+        // NOTE: chaperone() gives each approval loaded through here this model as its approvable, without a query, so
+        // checking what can be done with a page of them (ApprovalPolicy) doesn't look the same thing up for each.
+        return $this->morphMany(Approval::class, 'approvable')->chaperone('approvable');
     }
 
     /**

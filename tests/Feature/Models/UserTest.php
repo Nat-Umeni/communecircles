@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\MassAssignmentException;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -79,19 +80,20 @@ class UserTest extends TestCase
         $this->assertSame('Lovelace', $user->last_name);
     }
 
-    public function test_ignores_attributes_that_are_not_mass_assignable(): void
+    public function test_refuses_attributes_that_are_not_mass_assignable(): void
     {
-        $user = new User(['email' => 'member@example.com', 'remember_token' => 'injected']);
+        $this->expectException(MassAssignmentException::class);
+        $this->expectExceptionMessage('[remember_token]');
 
-        $this->assertSame('member@example.com', $user->email);
-        $this->assertNull($user->remember_token);
+        new User(['email' => 'member@example.com', 'remember_token' => 'injected']);
     }
 
     public function test_does_not_let_the_role_be_mass_assigned(): void
     {
-        $user = new User(['email' => 'member@example.com', 'role' => 'super_admin']);
+        $this->expectException(MassAssignmentException::class);
+        $this->expectExceptionMessage('[role]');
 
-        $this->assertNull($user->role);
+        new User(['email' => 'member@example.com', 'role' => 'super_admin']);
     }
 
     public function test_casts_the_role_to_the_role_enum(): void
