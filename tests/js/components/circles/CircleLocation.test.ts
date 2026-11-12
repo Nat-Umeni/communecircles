@@ -6,7 +6,7 @@ import type { Location, Place } from '@/types';
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
 
 function location(overrides: Partial<Location>): Location {
-    return { name: null, place: totnes, country_code: 'GB', country_name: 'United Kingdom', ...overrides };
+    return { name: null, place: totnes, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: false, ...overrides };
 }
 
 describe('CircleLocation', () => {

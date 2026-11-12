@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalStatus;
@@ -990,6 +991,62 @@ class CircleControllerTest extends TestCase
         ]);
 
         $this->assertEquals(Location::at($this->totnes(), 'Fernhill Farm'), $circle->fresh()->location());
+    }
+
+    public function test_stores_the_circles_exact_spot_with_its_name_of_its_own(): void
+    {
+        $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), [
+            'name' => 'Exchange',
+            'description' => 'Share skills and lend tools.',
+            'location_name' => 'Fernhill Farm',
+            'country_code' => 'GB',
+            'latitude' => 50.4319,
+            'longitude' => -3.6863,
+        ]);
+
+        $this->assertEquals(Location::named('Fernhill Farm', 'GB', new Coordinates(50.4319, -3.6863)), Circle::sole()->location());
+    }
+
+    public function test_gives_the_circle_an_exact_spot_near_the_town_it_keeps(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), [
+            'name' => $circle->name,
+            'description' => $circle->description,
+            'geonames_id' => 2635610,
+            'latitude' => '50.4319',
+            'longitude' => '-3.6863',
+        ]);
+
+        $this->assertEquals(Location::at($this->totnes(), coordinates: new Coordinates(50.4319, -3.6863)), $circle->fresh()->location());
+    }
+
+    public function test_clears_the_circles_exact_spot_when_none_is_sent(): void
+    {
+        $circle = Circle::factory()->at(Location::at($this->totnes(), coordinates: new Coordinates(50.4319, -3.6863)))->create();
+
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->put(route('circles.update', $circle), [
+            'name' => $circle->name,
+            'description' => $circle->description,
+            'geonames_id' => 2635610,
+            'latitude' => '',
+            'longitude' => '',
+        ]);
+
+        $this->assertEquals(Location::at($this->totnes()), $circle->fresh()->location());
+    }
+
+    public function test_the_new_and_edit_circle_pages_send_the_map_tiles_for_picking_an_exact_spot(): void
+    {
+        $tiles = ['light' => ['url' => 'https://tiles.example.com/{z}/{x}/{y}.png', 'attribution' => 'Example', 'max_zoom' => 17], 'dark' => ['url' => 'https://tiles.example.com/dark/{z}/{x}/{y}.png', 'attribution' => 'Example', 'max_zoom' => 17]];
+        config(['map.tiles' => $tiles]);
+        $circle = Circle::factory()->create();
+
+        $this->actingAs($this->memberWhoCanCreate())->get(route('circles.create'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('map_tiles', $tiles));
+        $this->actingAs($this->memberOf($circle, CircleRole::Owner))->get(route('circles.edit', $circle))
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('map_tiles', $tiles));
     }
 
     public function test_the_new_circle_page_lists_the_countries_for_a_place_geonames_does_not_know(): void

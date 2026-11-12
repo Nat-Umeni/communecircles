@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalStatus;
@@ -144,7 +145,8 @@ class CircleSeeder extends Seeder
             $owner,
             ApprovalStatus::Approved,
             ['name' => self::BIG_CIRCLE, 'description' => 'An off-grid village of straw-bale homes at Fernhill, running on sun, wind and rainwater.'],
-            Location::at($this->totnes(), 'Fernhill'),
+            // Its land, a couple of miles west of the town; only its members and staff see this spot.
+            Location::at($this->totnes(), 'Fernhill', new Coordinates(50.4271, -3.7124)),
         );
         $circle->members()->attach($admin, ['role' => CircleRole::Admin]);
         $circle->members()->attach($member, ['role' => CircleRole::Member]);

@@ -22,7 +22,7 @@ const exchange: Loaded<Circle, 'members_count'> = {
     name: 'Seed Exchange',
     description: 'Swapping seeds that grow well here.',
     members_count: 3,
-    location: { name: null, place: totnes, country_code: 'GB', country_name: 'United Kingdom' },
+    location: { name: null, place: totnes, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: false },
 };
 
 const tiles: MapTiles = {
@@ -165,7 +165,7 @@ describe('circles/Show', () => {
         expect(map.props()).toEqual({
             center: totnes,
             zoom: 11,
-            markers: [{ ...totnes, label: 'Totnes, England, United Kingdom' }],
+            markers: [{ latitude: 50.43107, longitude: -3.6843, label: 'Totnes, England, United Kingdom' }],
             label: 'Where Seed Exchange is',
             tiles,
             options: { scrollWheelZoom: false },
@@ -173,9 +173,45 @@ describe('circles/Show', () => {
         expect(map.classes()).toContain('min-h-64');
     });
 
+    it('shows members its exact spot, closer in', () => {
+        const fernhill = { name: 'Fernhill Farm', place: totnes, country_code: 'GB', country_name: 'United Kingdom', coordinates: { latitude: 50.4271, longitude: -3.7124 }, coordinates_hidden: false };
+        const wrapper = show({ circle: { ...exchange, location: fernhill } });
+
+        expect(details(wrapper).getComponent(MapView).props()).toEqual(
+            expect.objectContaining({
+                center: { latitude: 50.4271, longitude: -3.7124 },
+                zoom: 14,
+                markers: [{ latitude: 50.4271, longitude: -3.7124, label: 'Fernhill Farm, near Totnes, England, United Kingdom' }],
+            }),
+        );
+        expect(details(wrapper).text()).not.toContain('Members can see');
+    });
+
+    it('shows everyone else the town, saying members can see its exact location', () => {
+        const hidden = { name: 'Fernhill Farm', place: totnes, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: true };
+        const wrapper = show({ circle: { ...exchange, location: hidden } });
+        const map = details(wrapper).getComponent(MapView);
+
+        expect([map.props('center'), map.props('zoom')]).toEqual([totnes, 11]);
+        expect(map.classes()).toEqual(expect.arrayContaining(['min-h-64', 'flex-1']));
+        expect(details(wrapper).text()).toContain('Members can see its exact location.');
+    });
+
+    it("says only members can see where a circle with no town is, when it has an exact spot they can't see", () => {
+        const hidden = { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: true };
+        const placeholder = details(show({ circle: { ...exchange, location: hidden } })).getComponent(MapPlaceholder);
+
+        expect(placeholder.text()).toBe('Only members can see where exactly this circle is.');
+        expect(placeholder.find('a').exists()).toBe(false);
+    });
+
+    it("says nothing about an exact spot when there isn't one", () => {
+        expect(details(show()).text()).not.toContain('exact');
+    });
+
     it.each([
         ['no location', null],
-        ['only a name for its land', { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom' }],
+        ['only a name for its land', { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: false }],
     ])('asks those who can update a circle with %s to put it on the map', (_, location) => {
         const wrapper = show({ circle: { ...exchange, location }, can: { ...nothing, update: true } });
         const placeholder = details(wrapper).getComponent(MapPlaceholder);

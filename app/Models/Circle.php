@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalStatus;
@@ -36,7 +37,8 @@ class Circle extends Model implements Approvable
         return LogOptions::defaults()
             ->logOnly([
                 'name', 'description',
-                'location_name', 'geonames_id', 'place_name', 'region', 'country_code', 'country_name', 'latitude', 'longitude',
+                'location_name', 'geonames_id', 'place_name', 'region', 'country_code', 'country_name', 'place_latitude', 'place_longitude',
+                'latitude', 'longitude',
             ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
@@ -173,8 +175,8 @@ class Circle extends Model implements Approvable
     }
 
     /**
-     * Where the circle is: its own name for its place, the nearest GeoNames town or village, or both. Null when
-     * it hasn't said.
+     * Where the circle is: its own name for its place, the nearest GeoNames town or village, or both, and its own
+     * exact spot if it gave one. Null when it hasn't said.
      */
     public function location(): ?Location
     {
@@ -188,11 +190,12 @@ class Circle extends Model implements Approvable
             region: $this->region,
             countryCode: $this->country_code,
             countryName: $this->country_name,
-            latitude: $this->latitude,
-            longitude: $this->longitude,
+            latitude: $this->place_latitude,
+            longitude: $this->place_longitude,
         );
+        $coordinates = $this->latitude === null ? null : new Coordinates($this->latitude, $this->longitude);
 
-        return new Location($this->location_name, $place, $this->country_code, $this->country_name);
+        return new Location($this->location_name, $place, $this->country_code, $this->country_name, $coordinates);
     }
 
     /**
@@ -207,8 +210,10 @@ class Circle extends Model implements Approvable
             'region' => $location?->place?->region,
             'country_code' => $location?->countryCode,
             'country_name' => $location?->countryName,
-            'latitude' => $location?->place?->latitude,
-            'longitude' => $location?->place?->longitude,
+            'place_latitude' => $location?->place?->latitude,
+            'place_longitude' => $location?->place?->longitude,
+            'latitude' => $location?->coordinates?->latitude,
+            'longitude' => $location?->coordinates?->longitude,
         ]);
     }
 
@@ -219,6 +224,8 @@ class Circle extends Model implements Approvable
     {
         return [
             'geonames_id' => 'integer',
+            'place_latitude' => 'float',
+            'place_longitude' => 'float',
             'latitude' => 'float',
             'longitude' => 'float',
         ];

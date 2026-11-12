@@ -70,6 +70,8 @@ class CircleController extends Controller
         return Inertia::render('circles/Create', [
             'cannot_create_reason' => $permission->denied() ? $permission->message() : null,
             'countries' => Countries::options(),
+            // For the map that picks the circle's exact spot.
+            'map_tiles' => config('map.tiles'),
         ]);
     }
 
@@ -164,6 +166,8 @@ class CircleController extends Controller
         return Inertia::render('circles/Edit', [
             'circle' => $circle->loadMissing('approval')->toResource(),
             'countries' => Countries::options(),
+            // For the map that picks the circle's exact spot.
+            'map_tiles' => config('map.tiles'),
         ]);
     }
 

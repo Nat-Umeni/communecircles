@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Circle;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Exceptions\GeoNamesException;
@@ -15,9 +16,9 @@ use Illuminate\Validation\Rule;
 
 /**
  * What creating and editing a circle share: its optional location. That's a name of its own (e.g. "Fernhill Farm"),
- * the nearest town or village from GeoNames, or both. For a place, the form sends only its GeoNames id; its name,
- * region, country and coordinates are read from GeoNames, so they can't be made up. A name with no place needs its
- * country instead.
+ * the nearest town or village from GeoNames, or both, and optionally its own exact spot. For a place, the form sends
+ * only its GeoNames id; its name, region, country and coordinates are read from GeoNames, so they can't be made up. A
+ * name with no place needs its country instead, and an exact spot needs a name or a place with it.
  */
 abstract class CircleRequest extends FormRequest
 {
@@ -37,6 +38,14 @@ abstract class CircleRequest extends FormRequest
                 'string',
                 Rule::in(array_keys(Countries::all())),
             ],
+            'latitude' => [
+                'nullable',
+                'required_with:longitude',
+                Rule::prohibitedIf(fn (): bool => ! $this->filled('location_name') && ! $this->filled('geonames_id')),
+                'numeric',
+                'between:-90,90',
+            ],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
         ];
     }
 
@@ -47,6 +56,9 @@ abstract class CircleRequest extends FormRequest
     {
         return [
             'country_code.required' => 'Choose the country the place is in.',
+            'latitude.required_with' => 'Give both the latitude and the longitude, or neither.',
+            'longitude.required_with' => 'Give both the latitude and the longitude, or neither.',
+            'latitude.prohibited' => 'Give the place a name or choose its nearest town to go with its exact spot.',
         ];
     }
 
@@ -92,19 +104,20 @@ abstract class CircleRequest extends FormRequest
     }
 
     /**
-     * Where the circle is, from the form: at (or near) the chosen place, or just a name in a country.
-     * Null when the form leaves the location empty.
+     * Where the circle is, from the form: at (or near) the chosen place, or just a name in a country, with its exact
+     * spot if the form gives one. Null when the form leaves the location empty.
      */
     public function location(): ?Location
     {
         $name = $this->filled('location_name') ? $this->string('location_name')->value() : null;
         $place = $this->placeChanged() ? $this->chosenPlace : $this->circleBeingEdited()?->location()?->place;
+        $coordinates = $this->filled('latitude') ? new Coordinates($this->float('latitude'), $this->float('longitude')) : null;
 
         if ($place !== null) {
-            return Location::at($place, $name);
+            return Location::at($place, $name, $coordinates);
         }
 
-        return $name === null ? null : Location::named($name, $this->string('country_code')->value());
+        return $name === null ? null : Location::named($name, $this->string('country_code')->value(), $coordinates);
     }
 
     /**

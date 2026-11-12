@@ -168,6 +168,62 @@ class CircleRequestTest extends TestCase
         $response->assertInvalid(['location_name' => 'The place name field must not be greater than 255 characters.']);
     }
 
+    public function test_accepts_an_exact_spot_with_a_name_of_its_own(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'country_code' => 'GB', 'latitude' => 50.4319, 'longitude' => -3.6863]));
+
+        $response->assertValid()->assertRedirect();
+    }
+
+    #[DataProvider('halfASpot')]
+    public function test_needs_both_the_latitude_and_the_longitude_or_neither(string $given, string $missing): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'country_code' => 'GB', $given => 50]));
+
+        $response->assertInvalid([$missing => 'Give both the latitude and the longitude, or neither.']);
+    }
+
+    #[DataProvider('offTheGlobe')]
+    public function test_rejects_a_spot_off_the_globe(float|string $latitude, float|string $longitude, string $wrong, string $message): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['location_name' => 'Fernhill Farm', 'country_code' => 'GB', 'latitude' => $latitude, 'longitude' => $longitude]));
+
+        $response->assertInvalid([$wrong => $message]);
+    }
+
+    public function test_an_exact_spot_needs_a_name_or_a_town_with_it(): void
+    {
+        $response = $this->actingAs($this->memberWhoCanCreate())->post(route('circles.store'), $this->details(['latitude' => 50.4319, 'longitude' => -3.6863]));
+
+        $response->assertInvalid(['latitude' => 'Give the place a name or choose its nearest town to go with its exact spot.']);
+        $this->assertDatabaseEmpty('circles');
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function halfASpot(): array
+    {
+        return [
+            'only the latitude' => ['latitude', 'longitude'],
+            'only the longitude' => ['longitude', 'latitude'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{float|string, float|string, string, string}>
+     */
+    public static function offTheGlobe(): array
+    {
+        return [
+            'north of the pole' => [90.1, 0, 'latitude', 'The latitude field must be between -90 and 90.'],
+            'south of the pole' => [-90.1, 0, 'latitude', 'The latitude field must be between -90 and 90.'],
+            'east of the date line' => [0, 180.1, 'longitude', 'The longitude field must be between -180 and 180.'],
+            'west of the date line' => [0, -180.1, 'longitude', 'The longitude field must be between -180 and 180.'],
+            'not a number' => ['north', 0, 'latitude', 'The latitude field must be a number.'],
+        ];
+    }
+
     /**
      * @return array<string, array{array<string, mixed>}>
      */

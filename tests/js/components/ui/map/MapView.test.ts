@@ -9,7 +9,7 @@ import type { MapMarker, MapPoint, MapTiles } from '@/types';
  */
 const leaflet = vi.hoisted(() => {
     const drawn = {
-        map: { setView: vi.fn(), remove: vi.fn() },
+        map: { setView: vi.fn(), remove: vi.fn(), on: vi.fn() },
         tiles: { addTo: vi.fn(), remove: vi.fn() },
         pins: { addTo: vi.fn(), addLayer: vi.fn(), clearLayers: vi.fn() },
     };
@@ -149,6 +149,17 @@ describe('MapView', () => {
         expect(leaflet.map).toHaveBeenCalledExactlyOnceWith(expect.anything(), { center: [51.75, -2.2], zoom: 8 });
         expect(leaflet.drawn.pins.addLayer).toHaveBeenCalledExactlyOnceWith({ at: [51.75, -2.2], options: { title: 'Stroud', icon: dot } });
         expect(leaflet.drawn.map.setView).not.toHaveBeenCalled();
+    });
+
+    it('tells the page where it was clicked, brought back onto the globe past the date line', async () => {
+        const wrapper = mapView();
+        await flushPromises();
+        const [event, onClick] = leaflet.drawn.map.on.mock.calls[0];
+
+        onClick({ latlng: { wrap: () => ({ lat: 50.4271, lng: -3.7124 }) } });
+
+        expect(event).toBe('click');
+        expect(wrapper.emitted('pick')).toEqual([[{ latitude: 50.4271, longitude: -3.7124 }]]);
     });
 
     it('removes the map when it goes', async () => {

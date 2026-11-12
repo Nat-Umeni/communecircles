@@ -1,13 +1,19 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import Create from '@/pages/circles/Create.vue';
-import type { Option } from '@/types';
+import CircleForm from '@/components/circles/CircleForm.vue';
+import type { MapTiles, Option } from '@/types';
 import { fakeRouter, field } from '@tests/support';
 
 const countries: Option[] = [{ value: 'GB', label: 'United Kingdom' }];
 
+const tiles: MapTiles = {
+    light: { url: 'https://tiles.example.com/{z}/{x}/{y}.png', attribution: '&copy; Example Maps', max_zoom: 17 },
+    dark: { url: 'https://tiles.example.com/dark/{z}/{x}/{y}.png', attribution: '&copy; Example Maps', max_zoom: 17 },
+};
+
 function create(cannotCreateReason: string | null = null) {
-    return mount(Create, { props: { cannot_create_reason: cannotCreateReason, countries } });
+    return mount(Create, { props: { cannot_create_reason: cannotCreateReason, countries, map_tiles: tiles }, global: { stubs: { MapView: true } } });
 }
 
 describe('circles/Create', () => {
@@ -22,6 +28,10 @@ describe('circles/Create', () => {
         await wrapper.get('form').trigger('submit');
 
         expect(fakeRouter.post).toHaveBeenCalledWith('/circles.store', expect.objectContaining({ name: 'Seed Exchange' }), expect.anything());
+    });
+
+    it('gives the form the map tiles for picking the exact spot', () => {
+        expect(create().getComponent(CircleForm).props('mapTiles')).toEqual(tiles);
     });
 
     it("says why the member can't start a circle yet, instead of the form", () => {

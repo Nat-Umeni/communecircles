@@ -29,7 +29,7 @@ describe('CircleCard', () => {
     it('says where the circle is when it has a location', () => {
         const located: Loaded<Circle, 'members_count'> = {
             ...exchange,
-            location: { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom' },
+            location: { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom', coordinates: null, coordinates_hidden: false },
         };
 
         expect(mount(CircleCard, { props: { circle: located } }).text()).toContain('Fernhill Farm, United Kingdom');

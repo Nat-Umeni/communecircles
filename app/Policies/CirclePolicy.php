@@ -45,6 +45,15 @@ class CirclePolicy
     }
 
     /**
+     * Determine whether the user can see the circle's exact spot (its land): its members and staff. Everyone else
+     * gets the town it's near.
+     */
+    public function viewExactLocation(User $user, Circle $circle): bool
+    {
+        return $user->role->internal() || $circle->membershipOf($user) !== null;
+    }
+
+    /**
      * Determine whether the user can see who is in the circle: its owners and admins, and staff.
      */
     public function viewMembers(User $user, Circle $circle): bool

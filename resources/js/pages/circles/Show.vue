@@ -54,12 +54,18 @@ const joining = useForm({});
 // Whether the invite dialog is open; the header's Create menu opens it.
 const inviting = ref(false);
 
-/** How close the map is: the town the community is near and around it. */
-const MAP_ZOOM = 11;
+/** How close the map is: the town the community is near and around it, or right in on its exact spot. */
+const TOWN_ZOOM = 11;
+const SPOT_ZOOM = 14;
 
-// The circle's point on the map: the GeoNames town it's near. None for a circle with only a name for its land, or no
-// location at all.
-const place = computed(() => props.circle.location?.place ?? null);
+// The circle's point on the map: its exact spot for those who may see it, else the GeoNames town it's near. None
+// for a circle with only a name for its land (or one whose spot the viewer may not see), or no location at all.
+const mapPoint = computed(() => {
+    const location = props.circle.location;
+    const point = location?.coordinates ?? location?.place;
+
+    return point ? { latitude: point.latitude, longitude: point.longitude } : null;
+});
 
 // A new page of members brings their search back into view, rather than just the list's top.
 const membersSearch = useTemplateRef<InstanceType<typeof SearchBar>>('membersSearch');
@@ -123,21 +129,30 @@ function askToJoin(): void {
             </div>
 
             <!-- NOTE: beside the details on a wide card, under them on a phone. A circle that isn't on the map gets an
-            ask to put it there for those who can, and no side (full-width details) for everyone else. -->
-            <template v-if="place" #side>
-                <MapView
-                    :center="place"
-                    :zoom="MAP_ZOOM"
-                    :markers="[{ ...place, label: locationLabel(circle.location!) }]"
-                    :label="`Where ${circle.name} is`"
-                    :tiles="map_tiles"
-                    :options="{ scrollWheelZoom: false }"
-                    class="min-h-64"
-                />
+            ask to put it there for those who can; one whose exact spot the viewer may not see says members can; and
+            otherwise there's no side (full-width details). -->
+            <template v-if="mapPoint" #side>
+                <div class="flex flex-col gap-2">
+                    <MapView
+                        :center="circle.location!.coordinates ?? circle.location!.place!"
+                        :zoom="circle.location!.coordinates ? SPOT_ZOOM : TOWN_ZOOM"
+                        :markers="[{ ...mapPoint, label: locationLabel(circle.location!) }]"
+                        :label="`Where ${circle.name} is`"
+                        :tiles="map_tiles"
+                        :options="{ scrollWheelZoom: false }"
+                        class="min-h-64 flex-1"
+                    />
+                    <p v-if="circle.location!.coordinates_hidden" class="text-sm text-muted-foreground">Members can see its exact location.</p>
+                </div>
             </template>
             <template v-else-if="can.update" #side>
                 <MapPlaceholder class="min-h-64">
                     <p>Not on the map yet. If you know the location, <TextLink :href="route('circles.edit', circle.public_id)">update this circle</TextLink>!</p>
+                </MapPlaceholder>
+            </template>
+            <template v-else-if="circle.location?.coordinates_hidden" #side>
+                <MapPlaceholder class="min-h-64">
+                    <p>Only members can see where exactly this circle is.</p>
                 </MapPlaceholder>
             </template>
         </Card>

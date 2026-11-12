@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalType;
@@ -322,7 +323,30 @@ class CircleTest extends TestCase
         $circle->refresh();
         $this->assertEquals(Location::named('Fernhill Farm', 'GB'), $circle->location());
         $this->assertNull($circle->geonames_id);
-        $this->assertNull($circle->latitude);
+        $this->assertNull($circle->place_latitude);
+    }
+
+    public function test_keeps_its_own_exact_spot_apart_from_the_town_it_is_near(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $circle->locate(Location::at($this->totnes(), 'Fernhill Farm', new Coordinates(50.4319, -3.6863)));
+        $circle->save();
+
+        $circle->refresh();
+        $this->assertEquals(Location::at($this->totnes(), 'Fernhill Farm', new Coordinates(50.4319, -3.6863)), $circle->location());
+        $this->assertSame([50.43107, -3.6843], [$circle->place_latitude, $circle->place_longitude]);
+        $this->assertSame([50.4319, -3.6863], [$circle->latitude, $circle->longitude]);
+    }
+
+    public function test_keeps_an_exact_spot_for_a_place_geonames_does_not_know(): void
+    {
+        $circle = Circle::factory()->create();
+
+        $circle->locate(Location::named('Fernhill Farm', 'GB', new Coordinates(50.4319, -3.6863)));
+        $circle->save();
+
+        $this->assertEquals(Location::named('Fernhill Farm', 'GB', new Coordinates(50.4319, -3.6863)), $circle->fresh()->location());
     }
 
     public function test_keeps_a_place_with_no_region(): void
@@ -338,7 +362,7 @@ class CircleTest extends TestCase
 
     public function test_clearing_the_location_empties_every_part_of_it(): void
     {
-        $circle = Circle::factory()->in($this->totnes(), 'Fernhill Farm')->create();
+        $circle = Circle::factory()->at(Location::at($this->totnes(), 'Fernhill Farm', new Coordinates(50.4319, -3.6863)))->create();
 
         $circle->locate(null);
         $circle->save();
@@ -348,16 +372,18 @@ class CircleTest extends TestCase
         $this->assertNull($circle->location_name);
         $this->assertNull($circle->geonames_id);
         $this->assertNull($circle->country_code);
+        $this->assertNull($circle->place_latitude);
         $this->assertNull($circle->latitude);
     }
 
     public function test_does_not_let_the_location_be_mass_assigned(): void
     {
-        $circle = new Circle(['name' => 'Exchange', 'location_name' => 'Fernhill Farm', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'latitude' => 50.43107]);
+        $circle = new Circle(['name' => 'Exchange', 'location_name' => 'Fernhill Farm', 'geonames_id' => 2635610, 'place_name' => 'Totnes', 'place_latitude' => 50.43107, 'latitude' => 50.4319]);
 
         $this->assertNull($circle->location_name);
         $this->assertNull($circle->geonames_id);
         $this->assertNull($circle->place_name);
+        $this->assertNull($circle->place_latitude);
         $this->assertNull($circle->latitude);
     }
 
@@ -416,9 +442,19 @@ class CircleTest extends TestCase
             'region' => 'England',
             'country_code' => 'GB',
             'country_name' => 'United Kingdom',
-            'latitude' => 50.43107,
-            'longitude' => -3.6843,
+            'place_latitude' => 50.43107,
+            'place_longitude' => -3.6843,
         ], $this->lastActivityAbout($circle)->attribute_changes['attributes']);
+    }
+
+    public function test_logs_a_new_exact_spot(): void
+    {
+        $circle = Circle::factory()->in($this->totnes())->create();
+
+        $circle->locate(Location::at($this->totnes(), coordinates: new Coordinates(50.4319, -3.6863)));
+        $circle->save();
+
+        $this->assertSame(['latitude' => 50.4319, 'longitude' => -3.6863], $this->lastActivityAbout($circle)->attribute_changes['attributes']);
     }
 
     public function test_does_not_log_a_save_that_only_touches_the_timestamps(): void

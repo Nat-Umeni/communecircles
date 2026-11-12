@@ -94,6 +94,34 @@ class CirclePolicyTest extends TestCase
         $this->assertFalse(Gate::allows('viewChannels', Circle::factory()->create()));
     }
 
+    #[DataProvider('circleRoles')]
+    public function test_every_member_can_see_where_exactly_their_circle_is(CircleRole $role): void
+    {
+        $circle = Circle::factory()->create();
+
+        $this->assertTrue($this->memberOf($circle, $role)->can('viewExactLocation', $circle));
+    }
+
+    #[DataProvider('staffRoles')]
+    public function test_staff_can_see_where_exactly_any_circle_is(Role $role): void
+    {
+        $this->assertTrue(User::factory()->create(['role' => $role])->can('viewExactLocation', Circle::factory()->create()));
+    }
+
+    public function test_someone_outside_the_circle_cannot_see_where_exactly_it_is(): void
+    {
+        $circle = Circle::factory()->create();
+        $this->memberOf($circle, CircleRole::Owner);
+        $outsider = $this->memberOf(Circle::factory()->create(), CircleRole::Owner);
+
+        $this->assertFalse($outsider->can('viewExactLocation', $circle));
+    }
+
+    public function test_guests_cannot_see_where_exactly_a_circle_is(): void
+    {
+        $this->assertFalse(Gate::allows('viewExactLocation', Circle::factory()->create()));
+    }
+
     #[DataProvider('staffRoles')]
     public function test_internal_staff_can_view_any_circles_channels(Role $role): void
     {

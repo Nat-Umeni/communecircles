@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\DTO\Coordinates;
 use App\DTO\GeoNames\Place;
 use App\DTO\Location;
 use App\Enums\Approval\ApprovalStatus;
@@ -122,8 +123,8 @@ class CircleFactory extends Factory
 
     /**
      * Somewhere near one of the places, mostly, under the community's own name for its land (the first word of its
-     * name): usually near one of them, with its coordinates (e.g. for a map); sometimes just the land's name in that
-     * place's country; sometimes nowhere at all.
+     * name): usually near one of them, with its coordinates (e.g. for a map), and half of those with an exact spot of
+     * their own; sometimes just the land's name in that place's country; sometimes nowhere at all.
      *
      * @param  non-empty-list<Place>  $places
      */
@@ -132,9 +133,14 @@ class CircleFactory extends Factory
         return $this->afterMaking(function (Circle $circle) use ($places): void {
             $place = fake()->randomElement($places);
             $land = Str::before($circle->name, ' ');
+            // NOTE: within a few km of the town, so the land is plausibly "near" it.
+            $spot = fn (): Coordinates => new Coordinates(
+                round($place->latitude + fake()->randomFloat(4, -0.05, 0.05), 6),
+                round($place->longitude + fake()->randomFloat(4, -0.08, 0.08), 6),
+            );
 
             $circle->locate(match (true) {
-                fake()->boolean(80) => Location::at($place, $land),
+                fake()->boolean(80) => Location::at($place, $land, fake()->boolean(50) ? $spot() : null),
                 fake()->boolean(50) => Location::named($land, $place->countryCode),
                 default => null,
             });

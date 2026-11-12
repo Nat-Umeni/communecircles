@@ -23,6 +23,9 @@ const props = withDefaults(
     { markers: () => [], options: () => ({}) },
 );
 
+// Where the map was clicked, e.g. to pick a spot.
+const emit = defineEmits<{ pick: [point: MapPoint] }>();
+
 /** Each point's dot, in the accent colour with a ring, like the dot before a circle card's title. */
 const DOT_CLASS = 'rounded-full bg-accent ring-4 ring-surface shadow-md';
 
@@ -69,6 +72,12 @@ onMounted(async () => {
     drawTiles();
     pins = loaded.layerGroup().addTo(map);
     markPoints();
+    // NOTE: wrap() brings a click on a repeat of the world (past the date line) back to a longitude on the globe.
+    map.on('click', (event) => {
+        const { lat, lng } = event.latlng.wrap();
+
+        emit('pick', { latitude: lat, longitude: lng });
+    });
 });
 
 watch(

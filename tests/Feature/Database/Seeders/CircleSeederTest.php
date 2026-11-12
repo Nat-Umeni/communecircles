@@ -57,12 +57,16 @@ class CircleSeederTest extends TestCase
     {
         $this->assertGreaterThan(
             Circle::query()->count() / 2,
-            Circle::query()->whereNotNull('latitude')->whereNotNull('longitude')->count(),
+            Circle::query()->whereNotNull('place_latitude')->whereNotNull('place_longitude')->count(),
             'most circles are near a GeoNames town, with coordinates for the explore map',
         );
+        $exact = Circle::query()->whereNotNull('latitude')->whereNotNull('longitude')->count();
+        $this->assertGreaterThan(1, $exact, 'some circles besides the big one have an exact spot of their own');
+        $this->assertLessThan(Circle::query()->whereNotNull('place_latitude')->count(), $exact, 'not every circle near a town has an exact spot');
         $this->assertGreaterThan(1, Circle::query()->distinct()->count('country_code'), 'the circles are in more than one country');
         $big = Circle::query()->where('name', CircleSeeder::BIG_CIRCLE)->sole();
         $this->assertSame(['Fernhill', 'Totnes'], [$big->location_name, $big->place_name], 'the big circle is on its land near Totnes');
+        $this->assertEqualsWithDelta([$big->place_latitude, $big->place_longitude], [$big->latitude, $big->longitude], 0.1, 'the big circle has its exact spot near Totnes');
     }
 
     private function assertTheBigCircle(): void
