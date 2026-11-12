@@ -5,11 +5,14 @@ import CancelInvite from '@/components/circles/CancelInvite.vue';
 import DeleteCircle from '@/components/circles/DeleteCircle.vue';
 import InviteDialog from '@/components/circles/InviteDialog.vue';
 import MembersTable from '@/components/circles/MembersTable.vue';
+import Card from '@/components/ui/Card.vue';
 import CountPill from '@/components/ui/CountPill.vue';
+import MapPlaceholder from '@/components/ui/map/MapPlaceholder.vue';
+import MapView from '@/components/ui/map/MapView.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import SearchBar from '@/components/ui/search/SearchBar.vue';
 import Show from '@/pages/circles/Show.vue';
-import type { Approval, Circle, CirclePermissions, Loaded, Paginated, Place, User } from '@/types';
+import type { Approval, Circle, CirclePermissions, Loaded, MapTiles, Paginated, Place, User } from '@/types';
 import { fakeRouter, links, paginated, signIn, visit } from '@tests/support';
 
 const totnes: Place = { geonames_id: 2635610, name: 'Totnes', region: 'England', country_code: 'GB', country_name: 'United Kingdom', latitude: 50.43107, longitude: -3.6843 };
@@ -20,6 +23,11 @@ const exchange: Loaded<Circle, 'members_count'> = {
     description: 'Swapping seeds that grow well here.',
     members_count: 3,
     location: { name: null, place: totnes, country_code: 'GB', country_name: 'United Kingdom' },
+};
+
+const tiles: MapTiles = {
+    light: { url: 'https://tiles.example.com/light/{z}/{x}/{y}.png', attribution: '&copy; Example Maps', max_zoom: 17 },
+    dark: { url: 'https://tiles.example.com/dark/{z}/{x}/{y}{r}.png', attribution: '&copy; Example Dark Maps', max_zoom: 20 },
 };
 
 const nothing: CirclePermissions = { view_channels: false, request_to_join: false, invite: false, update: false, delete: false };
@@ -55,6 +63,7 @@ interface ShowProps {
     pending_invites: Paginated<Loaded<Approval, 'user'>> | null;
     members: Paginated<Loaded<User, 'membership'>> | null;
     filters: { members_search: string };
+    map_tiles: MapTiles;
 }
 
 /**
@@ -62,9 +71,18 @@ interface ShowProps {
  */
 function show(props: Partial<ShowProps> = {}, attachTo?: HTMLElement): VueWrapper {
     return mount(Show, {
-        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, filters: { members_search: '' }, ...props },
+        props: { circle: exchange, can: nothing, approval: null, join_request: null, pending_join_requests: null, invite: null, pending_invites: null, members: null, filters: { members_search: '' }, map_tiles: tiles, ...props },
+        // NOTE: the map itself is MapView's to test; here it's what the page asks it to show.
+        global: { stubs: { MapView: true } },
         attachTo,
     });
+}
+
+/**
+ * The card with the circle's details.
+ */
+function details(wrapper: VueWrapper): VueWrapper {
+    return wrapper.findAllComponents(Card).find((card) => card.props('title') === exchange.name)!;
 }
 
 /**
@@ -139,6 +157,40 @@ describe('circles/Show', () => {
         expect(card.text()).toContain('No members match “zz”');
         expect(card.findComponent(MembersTable).exists()).toBe(false);
         expect(card.find('form[role="search"]').exists()).toBe(true);
+    });
+
+    it('shows where the circle is on a map beside its details', () => {
+        const map = details(show()).getComponent(MapView);
+
+        expect(map.props()).toEqual({
+            center: totnes,
+            zoom: 11,
+            markers: [{ ...totnes, label: 'Totnes, England, United Kingdom' }],
+            label: 'Where Seed Exchange is',
+            tiles,
+            options: { scrollWheelZoom: false },
+        });
+        expect(map.classes()).toContain('min-h-64');
+    });
+
+    it.each([
+        ['no location', null],
+        ['only a name for its land', { name: 'Fernhill Farm', place: null, country_code: 'GB', country_name: 'United Kingdom' }],
+    ])('asks those who can update a circle with %s to put it on the map', (_, location) => {
+        const wrapper = show({ circle: { ...exchange, location }, can: { ...nothing, update: true } });
+        const placeholder = details(wrapper).getComponent(MapPlaceholder);
+
+        expect(placeholder.text()).toBe('Not on the map yet. If you know the location, update this circle!');
+        expect([placeholder.get('a').text(), placeholder.get('a').attributes('href')]).toEqual(['update this circle', '/circles.edit/abc123']);
+        expect(placeholder.classes()).toContain('min-h-64');
+        expect(wrapper.findComponent(MapView).exists()).toBe(false);
+    });
+
+    it("keeps the details full width for anyone else when the circle isn't on the map", () => {
+        const wrapper = show({ circle: { ...exchange, location: null } });
+
+        expect(wrapper.findComponent(MapView).exists()).toBe(false);
+        expect(wrapper.findComponent(MapPlaceholder).exists()).toBe(false);
     });
 
     it('lets those who can delete the circle', () => {

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import type { WritableComputedRef } from 'vue';
+import type { ComputedRef, WritableComputedRef } from 'vue';
 
 export type Theme = 'light' | 'dark' | 'system';
 
@@ -8,6 +8,9 @@ const STORAGE_KEY = 'theme';
 const THEMES: Theme[] = ['light', 'dark', 'system'];
 
 const theme = ref<Theme>('system');
+/** Whether the system asks for dark, kept up to date while the page is open. */
+const systemDark = ref(false);
+const dark = computed(() => theme.value === 'dark' || (theme.value === 'system' && systemDark.value));
 let initialised = false;
 
 function isTheme(value: string | null): value is Theme {
@@ -28,8 +31,7 @@ function readStoredTheme(): Theme {
 }
 
 function applyTheme(): void {
-    const dark = theme.value === 'dark' || (theme.value === 'system' && prefersDark().matches);
-    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('dark', dark.value);
 }
 
 function initialise(): void {
@@ -38,7 +40,10 @@ function initialise(): void {
     }
     initialised = true;
     theme.value = readStoredTheme();
-    prefersDark().addEventListener('change', () => {
+    const system = prefersDark();
+    systemDark.value = system.matches;
+    system.addEventListener('change', () => {
+        systemDark.value = system.matches;
         if (theme.value === 'system') {
             applyTheme();
         }
@@ -61,9 +66,10 @@ function setTheme(value: string): void {
 
 /**
  * Light / dark / system theme preference, shared by every component that uses it.
- * `theme` is writable, so it works with v-model.
+ * `theme` is writable, so it works with v-model; `dark` is whether the page is dark now (following the system on the
+ * system setting), for what CSS can't switch, e.g. a map's tiles.
  */
-export function useTheme(): { theme: WritableComputedRef<Theme, string>; setTheme: (value: string) => void } {
+export function useTheme(): { theme: WritableComputedRef<Theme, string>; setTheme: (value: string) => void; dark: ComputedRef<boolean> } {
     initialise();
 
     return {
@@ -72,5 +78,6 @@ export function useTheme(): { theme: WritableComputedRef<Theme, string>; setThem
             set: setTheme,
         }),
         setTheme,
+        dark,
     };
 }

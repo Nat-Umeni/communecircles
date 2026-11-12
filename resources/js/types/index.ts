@@ -2,6 +2,7 @@
 // (app/Http/Resources), dto/ (app/DTO) and policies/ (app/Policies), plus a few helpers. Import them from '@/types'.
 export type * from './dto';
 export type * from './enums';
+export type * from './map';
 export type * from './models';
 export type * from './options';
 export type * from './pagination';

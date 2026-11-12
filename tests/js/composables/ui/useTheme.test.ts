@@ -138,6 +138,23 @@ describe('useTheme', () => {
         expect(isDark()).toBe(false);
     });
 
+    it('says whether the page is dark now, following the system while on the system setting', async () => {
+        const changeSystem = systemPrefersDark(false);
+        const { dark, setTheme } = (await freshUseTheme())();
+
+        expect(dark.value).toBe(false);
+
+        changeSystem(true);
+        expect(dark.value).toBe(true);
+
+        setTheme('light');
+        expect(dark.value).toBe(false);
+
+        setTheme('dark');
+        changeSystem(false);
+        expect(dark.value).toBe(true);
+    });
+
     it('shares one theme and one system listener between every caller', async () => {
         systemPrefersDark(false);
         const useTheme = await freshUseTheme();

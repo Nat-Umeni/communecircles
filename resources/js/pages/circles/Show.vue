@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { Mail, Pencil } from '@lucide/vue';
-import { ref, useTemplateRef } from 'vue';
+import { computed, ref, useTemplateRef } from 'vue';
 import { route } from 'ziggy-js';
 import { useAuth } from '@/composables/auth/useAuth';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -16,12 +16,15 @@ import Alert from '@/components/ui/Alert.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CountPill from '@/components/ui/CountPill.vue';
+import TextLink from '@/components/ui/TextLink.vue';
 import TimeAgo from '@/components/ui/TimeAgo.vue';
+import MapPlaceholder from '@/components/ui/map/MapPlaceholder.vue';
+import MapView from '@/components/ui/map/MapView.vue';
 import MenuItem from '@/components/ui/menu/MenuItem.vue';
 import PaginatedList from '@/components/ui/pagination/PaginatedList.vue';
 import SearchBar from '@/components/ui/search/SearchBar.vue';
-import type { Approval, Circle, CirclePermissions, Loaded, Paginated, User } from '@/types';
-import { fullName } from '@/utils/format';
+import type { Approval, Circle, CirclePermissions, Loaded, MapTiles, Paginated, User } from '@/types';
+import { fullName, locationLabel } from '@/utils/format';
 
 // From CircleController::show.
 const props = defineProps<{
@@ -41,6 +44,8 @@ const props = defineProps<{
     members: Paginated<Loaded<User, 'membership'>> | null;
     /** The search the members list is for ('' for everyone). */
     filters: { members_search: string };
+    /** The map images for the map of where the circle is (config/map.php). */
+    map_tiles: MapTiles;
 }>();
 
 const { signedIn } = useAuth();
@@ -48,6 +53,13 @@ const joining = useForm({});
 
 // Whether the invite dialog is open; the header's Create menu opens it.
 const inviting = ref(false);
+
+/** How close the map is: the town the community is near and around it. */
+const MAP_ZOOM = 11;
+
+// The circle's point on the map: the GeoNames town it's near. None for a circle with only a name for its land, or no
+// location at all.
+const place = computed(() => props.circle.location?.place ?? null);
 
 // A new page of members brings their search back into view, rather than just the list's top.
 const membersSearch = useTemplateRef<InstanceType<typeof SearchBar>>('membersSearch');
@@ -109,6 +121,25 @@ function askToJoin(): void {
                 <Button v-else-if="!signedIn" :href="route('login')">Log in to ask to join</Button>
                 <DeleteCircle v-if="can.delete" :circle="circle" />
             </div>
+
+            <!-- NOTE: beside the details on a wide card, under them on a phone. A circle that isn't on the map gets an
+            ask to put it there for those who can, and no side (full-width details) for everyone else. -->
+            <template v-if="place" #side>
+                <MapView
+                    :center="place"
+                    :zoom="MAP_ZOOM"
+                    :markers="[{ ...place, label: locationLabel(circle.location!) }]"
+                    :label="`Where ${circle.name} is`"
+                    :tiles="map_tiles"
+                    :options="{ scrollWheelZoom: false }"
+                    class="min-h-64"
+                />
+            </template>
+            <template v-else-if="can.update" #side>
+                <MapPlaceholder class="min-h-64">
+                    <p>Not on the map yet. If you know the location, <TextLink :href="route('circles.edit', circle.public_id)">update this circle</TextLink>!</p>
+                </MapPlaceholder>
+            </template>
         </Card>
 
         <!-- NOTE: stacked on phones; side by side from sm up, and one card alone takes the whole row. -->

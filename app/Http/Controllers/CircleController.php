@@ -149,6 +149,8 @@ class CircleController extends Controller
                     ->through(fn (User $member): UserResource => $member->toResource())
                 : null,
             'filters' => ['members_search' => $membersSearch],
+            // For the map of where the circle is; only pages with a map get these.
+            'map_tiles' => config('map.tiles'),
         ]);
     }
 

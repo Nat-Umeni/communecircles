@@ -42,6 +42,30 @@ describe('Card', () => {
         expect(wrapper.find('h3').exists()).toBe(false);
     });
 
+    it("puts the side after the content, splitting the card in two once it's wide enough", () => {
+        const wrapper = mount(Card, { props: { title: 'Seed Exchange' }, slots: { default: '<p>Details</p>', side: '<div data-side></div>' } });
+        const side = wrapper.get('[data-side]').element;
+
+        expect(wrapper.get('section').classes()).toContain('@container');
+        expect([...side.parentElement!.classList]).toContain('@2xl:grid-cols-2');
+        expect(side.previousElementSibling!.querySelector('header h3')!.textContent).toBe('Seed Exchange');
+        expect(side.previousElementSibling!.textContent).toContain('Details');
+    });
+
+    it('keeps a card without a side in one column', () => {
+        const grid = mount(Card, { props: { title: 'Seed Exchange' }, slots: { default: '<p>Details</p>' } }).get('section > div');
+
+        expect(grid.classes()).toContain('grid-cols-1');
+        expect(grid.classes()).not.toContain('@2xl:grid-cols-2');
+        expect(grid.element.children).toHaveLength(1);
+    });
+
+    it('keeps wide content, such as a table, scrolling in its own box rather than widening the card', () => {
+        const content = mount(Card, { slots: { default: '<table></table>' } }).get('table').element.parentElement!;
+
+        expect([...content.classList]).toContain('min-w-0');
+    });
+
     it('leaves out the header without a title or description', () => {
         const wrapper = mount(Card, { slots: { default: 'Just content' } });
 

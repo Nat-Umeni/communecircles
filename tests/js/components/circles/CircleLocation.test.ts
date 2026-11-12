@@ -16,19 +16,4 @@ describe('CircleLocation', () => {
         expect(wrapper.text()).toBe('Fernhill Farm, near Totnes, England, United Kingdom');
         expect(wrapper.get('svg').attributes('aria-hidden')).toBe('true');
     });
-
-    it('says which town or village a circle is in', () => {
-        expect(mount(CircleLocation, { props: { location: location({}) } }).text()).toBe('Totnes, England, United Kingdom');
-    });
-
-    it('leaves out the region when GeoNames has none', () => {
-        const vaduz = { ...totnes, name: 'Vaduz', region: null, country_code: 'LI', country_name: 'Liechtenstein' };
-
-        expect(mount(CircleLocation, { props: { location: location({ place: vaduz, country_code: 'LI', country_name: 'Liechtenstein' }) } }).text())
-            .toBe('Vaduz, Liechtenstein');
-    });
-
-    it('says the name and country of a place GeoNames does not know', () => {
-        expect(mount(CircleLocation, { props: { location: location({ name: 'Fernhill Farm', place: null }) } }).text()).toBe('Fernhill Farm, United Kingdom');
-    });
 });

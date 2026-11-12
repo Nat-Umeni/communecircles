@@ -565,6 +565,19 @@ class CircleControllerTest extends TestCase
             ->where('members.data.3.membership.id', $circle->membershipOf($newest)->id));
     }
 
+    public function test_sends_the_light_and_dark_map_tiles_from_config_for_the_circles_map(): void
+    {
+        $tiles = [
+            'light' => ['url' => 'https://tiles.example.com/light/{z}/{x}/{y}.png', 'attribution' => '&copy; Example Maps', 'max_zoom' => 17],
+            'dark' => ['url' => 'https://tiles.example.com/dark/{z}/{x}/{y}{r}.png', 'attribution' => '&copy; Example Dark Maps', 'max_zoom' => 20],
+        ];
+        config(['map.tiles' => $tiles]);
+
+        $response = $this->get(route('circles.show', Circle::factory()->create()));
+
+        $response->assertInertia(fn (AssertableInertia $page) => $page->where('map_tiles', $tiles));
+    }
+
     public function test_shows_a_plain_member_who_else_is_in_the_circle_only_as_a_count(): void
     {
         $circle = Circle::factory()->create();
